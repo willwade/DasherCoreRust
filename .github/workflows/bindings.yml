@@ -109,7 +109,7 @@ jobs:
       - name: Build WASM JS bindings
         run: wasm-pack build --release --target web
       - name: Upload WASM artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wasm
           path: |
