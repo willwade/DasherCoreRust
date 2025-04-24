@@ -13,6 +13,7 @@ pub use self::view::DasherScreen;
 pub use self::input::DasherInput;
 pub use self::settings::{Parameter, Settings};
 pub use self::alphabet::{Alphabet, Symbol};
+pub use self::logging::{Logger, FileLogger};
 
 // Define modules
 pub mod api;

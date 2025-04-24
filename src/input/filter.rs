@@ -280,6 +280,91 @@ impl InputFilter for OneDimensionalFilter {
     }
 }
 
+/// Button input filter implementation
+pub struct ButtonInputFilter {
+    paused: bool,
+    last_button_state: bool,
+}
+
+impl ButtonInputFilter {
+    /// Create a new button input filter
+    pub fn new() -> Self {
+        Self {
+            paused: false,
+            last_button_state: false,
+        }
+    }
+}
+
+impl InputFilter for ButtonInputFilter {
+    fn process(&mut self, _input: &mut dyn DasherInput, _time: u64, _model: &mut DasherModel, _view: &mut dyn DasherView) {
+        // Button filter processes only on key events
+    }
+    fn key_down(&mut self, _time: u64, key: VirtualKey, model: &mut DasherModel, _view: &mut dyn DasherView) {
+        // Example: use Space as the button
+        if key == VirtualKey::Space {
+            if !self.last_button_state {
+                // TODO: trigger the appropriate model action here (e.g., step, zoom, select)
+                // e.g., model.handle_button_press();
+                self.last_button_state = true;
+            }
+        }
+    }
+    fn key_up(&mut self, _time: u64, key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {
+        if key == VirtualKey::Space {
+            self.last_button_state = false;
+        }
+    }
+    fn supports_pause(&self) -> bool { true }
+    fn pause(&mut self) { self.paused = true; }
+    fn unpause(&mut self) { self.paused = false; }
+    fn is_paused(&self) -> bool { self.paused }
+    fn activate(&mut self) {}
+    fn deactivate(&mut self) {}
+    fn decorate_view(&mut self, _view: &mut dyn DasherView) -> bool { false }
+}
+
+/// Stylus input filter implementation
+pub struct StylusInputFilter {
+    paused: bool,
+    last_x: i64,
+    last_y: i64,
+}
+
+impl StylusInputFilter {
+    /// Create a new stylus input filter
+    pub fn new() -> Self {
+        Self {
+            paused: false,
+            last_x: 0,
+            last_y: 0,
+        }
+    }
+}
+
+impl InputFilter for StylusInputFilter {
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+        // Use stylus/touch coordinates to control navigation
+        if let Some((x, y)) = input.get_dasher_coordinates(view) {
+            if (x, y) != (self.last_x, self.last_y) {
+                // TODO: trigger the appropriate model action here (e.g., move/drag)
+                // e.g., model.handle_stylus_move(x, y);
+                self.last_x = x;
+                self.last_y = y;
+            }
+        }
+    }
+    fn key_down(&mut self, _time: u64, _key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {}
+    fn key_up(&mut self, _time: u64, _key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {}
+    fn supports_pause(&self) -> bool { true }
+    fn pause(&mut self) { self.paused = true; }
+    fn unpause(&mut self) { self.paused = false; }
+    fn is_paused(&self) -> bool { self.paused }
+    fn activate(&mut self) {}
+    fn deactivate(&mut self) {}
+    fn decorate_view(&mut self, _view: &mut dyn DasherView) -> bool { false }
+}
+
 /// Click filter implementation
 pub struct ClickFilter {
     /// Whether the filter is paused
