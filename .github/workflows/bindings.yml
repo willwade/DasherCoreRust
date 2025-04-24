@@ -52,6 +52,8 @@ jobs:
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM
         run: cargo build --release --target wasm32-unknown-unknown --features wasm
+      - name: Install matching wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version 0.2.100 --force
       - name: Install wasm-pack
         run: cargo install wasm-pack
       - name: Build WASM JS bindings
