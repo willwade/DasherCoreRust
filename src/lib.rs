@@ -22,6 +22,7 @@ pub mod view;
 pub mod input;
 pub mod settings;
 pub mod alphabet;
+mod logging;
 
 // FFI and WebAssembly support
 #[cfg(feature = "wasm")]

@@ -1,0 +1,122 @@
+name: Build FFI Bindings
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [published]
+
+jobs:
+  build-c-cpp-csharp:
+    name: Build C/C++/C# (cdylib)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Install cbindgen
+        run: cargo install cbindgen
+      - name: Build cdylib
+        run: cargo build --release --lib
+      - name: Generate C header
+        run: cbindgen --crate dasher_core --output dasher_core.h
+      - name: Upload FFI artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ffi-${{ matrix.os }}
+          path: |
+            target/release/*.dll
+            target/release/*.so
+            target/release/*.dylib
+            dasher_core.h
+
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build WASM
+        run: cargo build --release --target wasm32-unknown-unknown --features wasm
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Build WASM JS bindings
+        run: wasm-pack build --release --target web
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: wasm
+          path: |
+            target/wasm32-unknown-unknown/release/*.wasm
+            pkg/
+
+  release-artifacts:
+    name: Upload Release Artifacts
+    needs: [build-c-cpp-csharp, build-wasm]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: ffi-ubuntu-latest
+          path: artifacts/linux
+      - uses: actions/download-artifact@v3
+        with:
+          name: ffi-macos-latest
+          path: artifacts/macos
+      - uses: actions/download-artifact@v3
+        with:
+          name: ffi-windows-latest
+          path: artifacts/windows
+      - uses: actions/download-artifact@v3
+        with:
+          name: wasm
+          path: artifacts/wasm
+      - name: Upload artifacts to GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/linux/*
+            artifacts/macos/*
+            artifacts/windows/*
+            artifacts/wasm/*
+
+  build-wasm:
+    name: Build WASM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Add wasm32 target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build WASM
+        run: cargo build --release --target wasm32-unknown-unknown --features wasm
+      - name: Install wasm-pack
+        run: cargo install wasm-pack
+      - name: Build WASM JS bindings
+        run: wasm-pack build --release --target web
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: wasm
+          path: |
+            target/wasm32-unknown-unknown/release/*.wasm
+            pkg/
