@@ -59,7 +59,7 @@ jobs:
       - name: Clean wasm-pack cache
         run: rm -rf ~/.cache/.wasm-pack
       - name: Build WASM JS bindings
-        run: wasm-pack build --release --target web
+        run: wasm-pack build --release --target web -- --features wasm
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -104,6 +104,7 @@ jobs:
         with:
           toolchain: stable
           override: true
+          components: rust-src
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM
