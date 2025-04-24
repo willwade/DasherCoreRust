@@ -94,11 +94,6 @@ jobs:
             artifacts/macos/*
             artifacts/windows/*
             artifacts/wasm/*
-
-  build-wasm:
-    name: Build WASM
-    runs-on: ubuntu-latest
-    steps:
       - uses: actions/checkout@v3
       - name: Install Rust
         uses: actions-rs/toolchain@v1
