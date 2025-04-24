@@ -67,4 +67,73 @@ mod tests {
         // Basic test to ensure the library compiles
         assert!(true);
     }
+
+    #[test]
+    fn test_model_initialization_and_root_expansion() {
+        let mut model = DasherModel::new();
+        assert!(model.initialize().is_ok());
+        // After initialization, root should exist and have children
+        let root = model.root_node().unwrap();
+        let root_borrow = root.borrow();
+        assert!(root_borrow.child_count() > 0);
+    }
+
+    #[test]
+    fn test_alphabet_english() {
+        let alphabet = Alphabet::english();
+        // Should contain all lowercase letters and space
+        for c in 'a'..='z' {
+            assert!(alphabet.get_index(c).is_some(), "Missing char {}", c);
+        }
+        assert!(alphabet.get_index(' ').is_some());
+        // Should include some punctuation
+        for c in ['.', ',', '!', '?', '\'', '"'] {
+            assert!(alphabet.get_index(c).is_some(), "Missing punctuation {}", c);
+        }
+    }
+
+    #[test]
+    fn test_node_expansion_and_navigation() {
+        let mut model = DasherModel::new();
+        model.initialize().unwrap();
+        let root = model.root_node().unwrap();
+        // Expand the root again (should be idempotent)
+        model.expand_node(&root);
+        let root_borrow = root.borrow();
+        let children = root_borrow.children();
+        assert!(!children.is_empty());
+        // Check that children's parent is root
+        for child in children {
+            let child_borrow = child.borrow();
+            let parent = child_borrow.parent();
+            assert!(parent.is_some());
+        }
+    }
+
+    #[test]
+    fn test_settings_and_parameters() {
+        let mut settings = Settings::new();
+        use crate::settings::Parameter;
+        settings.set_bool(Parameter::ButtonMode, true);
+        assert_eq!(settings.get_bool(Parameter::ButtonMode), Some(true));
+        settings.set_long(Parameter::MaxBitRate, 123);
+        assert_eq!(settings.get_long(Parameter::MaxBitRate), Some(123));
+        settings.set_string(Parameter::AlphabetID, "TestAlphabet".to_string());
+        assert_eq!(settings.get_string(Parameter::AlphabetID), Some("TestAlphabet"));
+    }
+
+    #[test]
+    fn test_language_model_ppm() {
+        use crate::model::language_model::{PPMLanguageModel, LanguageModel};
+        let mut model = PPMLanguageModel::new(5);
+        assert_eq!(model.num_symbols(), 5);
+        // Enter and learn a symbol
+        let context = 0;
+        let symbol = 2;
+        let _ = model.enter_symbol(context, symbol);
+        model.learn_symbol(context, symbol);
+    }
+
+    // Optionally: add more tests for FFI and integration if needed.
+
 }

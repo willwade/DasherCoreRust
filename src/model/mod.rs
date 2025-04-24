@@ -4,7 +4,7 @@
 //! the arithmetic coding algorithm and node tree management.
 
 mod node;
-mod language_model;
+pub mod language_model;
 
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -25,6 +25,8 @@ pub type NodeCreationEvent = Box<dyn Fn(&Rc<RefCell<DasherNode>>)>;
 /// It contains a tree of DasherNodes and the current viewpoint, and evolves
 /// the tree by expanding leaves and deleting ancestors/parents.
 pub struct DasherModel {
+    // ... existing fields ...
+
     /// Root node of the tree
     root: Option<Rc<RefCell<DasherNode>>>,
 
@@ -72,6 +74,10 @@ pub struct DasherModel {
 }
 
 impl DasherModel {
+    /// Public getter for root node (for testing)
+    pub fn root_node(&self) -> Option<std::rc::Rc<std::cell::RefCell<DasherNode>>> {
+        self.root.clone()
+    }
     /// Normalization constant for probability calculations
     pub const NORMALIZATION: u32 = 1 << 16;
 
