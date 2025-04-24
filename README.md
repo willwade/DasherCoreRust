@@ -2,6 +2,14 @@
 
 A Rust implementation of the Dasher text entry system core. This library provides the core functionality of Dasher, a zooming predictive text entry system designed for situations where keyboard input is impractical (for instance, accessibility or mobile devices).
 
+## Releases
+
+Pre-built binaries, including WebAssembly builds and C++ bindings, are available on the [GitHub Releases page](https://github.com/willwade/DasherCoreRust/releases). Each release includes:
+- WebAssembly (WASM) builds for web integration
+- C/C++/C# FFI bindings for desktop integration
+- Source code archives
+
+
 ## Building
 
 ### Prerequisites
