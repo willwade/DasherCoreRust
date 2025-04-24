@@ -56,6 +56,8 @@ jobs:
         run: cargo install wasm-bindgen-cli --version 0.2.100 --force
       - name: Install wasm-pack
         run: cargo install wasm-pack
+      - name: Clean wasm-pack cache
+        run: rm -rf ~/.cache/.wasm-pack
       - name: Build WASM JS bindings
         run: wasm-pack build --release --target web
       - name: Upload WASM artifacts
