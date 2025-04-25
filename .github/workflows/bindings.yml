@@ -108,21 +108,6 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-      - uses: actions/checkout@v4
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rust-src
-      - name: Add wasm32 target
-        run: rustup target add wasm32-unknown-unknown
-      - name: Build WASM
-        run: cargo build --release --target wasm32-unknown-unknown --features wasm
-      - name: Clean Cargo
-        run: cargo clean
-      - name: Force Install Latest wasm-pack
-        run: cargo install wasm-pack --force
-      - name: Build WASM JS bindings
-        run: wasm-pack build --release --target web
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
