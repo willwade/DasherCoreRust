@@ -8,6 +8,7 @@ use std::rc::{Rc, Weak};
 
 /// Node flags representing the state of the node
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
 pub struct NodeFlags(u32);
 
 impl NodeFlags {
@@ -23,10 +24,17 @@ impl NodeFlags {
     /// Node has all its children
     pub const ALL_CHILDREN: u32 = 0x0004;
 
+    /// Node represents a word boundary (space, punctuation, etc.)
+    pub const WORD_BOUNDARY: u32 = 0x0008;
+
+    /// Node represents a predicted word
+    pub const PREDICTED_WORD: u32 = 0x0010;
+
     /// Node is on the game path
-    pub const GAME: u32 = 0x0008;
+    pub const GAME: u32 = 0x0020;
 
     /// Node has been converted
+    pub const CONVERTED: u32 = 0x0040;
     pub const CONVERTED: u32 = 0x0010;
 
     /// Node is a control node
@@ -87,6 +95,25 @@ pub struct DasherNode {
 }
 
 impl DasherNode {
+    /// Check if this node is a word boundary
+    pub fn is_word_boundary(&self) -> bool {
+        self.get_flag(NodeFlags::WORD_BOUNDARY)
+    }
+
+    /// Set this node as a word boundary
+    pub fn set_word_boundary(&mut self, is_boundary: bool) {
+        self.set_flag(NodeFlags::WORD_BOUNDARY, is_boundary);
+    }
+
+    /// Check if this node represents a predicted word
+    pub fn is_predicted_word(&self) -> bool {
+        self.get_flag(NodeFlags::PREDICTED_WORD)
+    }
+
+    /// Set this node as a predicted word
+    pub fn set_predicted_word(&mut self, is_predicted: bool) {
+        self.set_flag(NodeFlags::PREDICTED_WORD, is_predicted);
+    }
     /// Normalization constant for probability calculations
     pub const NORMALIZATION: u32 = 1 << 16;
 

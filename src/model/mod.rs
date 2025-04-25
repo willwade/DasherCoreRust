@@ -4,14 +4,19 @@
 //! the arithmetic coding algorithm and node tree management.
 
 mod node;
-pub mod language_model;
+mod language;
+pub mod word_generator;
+mod word_prediction;
 
+pub use word_prediction::{WordPredictionManager, create_default_manager};
 use std::cell::RefCell;
 use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
+use std::path::Path;
 
-pub use node::{DasherNode, NodeFlags};
-pub use language_model::{LanguageModel, Context};
+use node::DasherNode;
+use language::{LanguageModel, CombinedLanguageModel, PPMOrder, Dictionary};
+pub use language::LanguageModel;
 
 use crate::view::{DasherScreen, Color};
 use crate::alphabet::{Alphabet, Symbol};
@@ -26,6 +31,10 @@ pub type NodeCreationEvent = Box<dyn Fn(&Rc<RefCell<DasherNode>>)>;
 /// the tree by expanding leaves and deleting ancestors/parents.
 pub struct DasherModel {
     // ... existing fields ...
+
+    /// Root node of the tree
+    /// Word prediction manager
+    word_prediction: Option<WordPredictionManager>,
 
     /// Root node of the tree
     root: Option<Rc<RefCell<DasherNode>>>,
@@ -74,31 +83,57 @@ pub struct DasherModel {
 }
 
 impl DasherModel {
-    /// Public getter for root node (for testing)
-    pub fn root_node(&self) -> Option<std::rc::Rc<std::cell::RefCell<DasherNode>>> {
-        self.root.clone()
-    }
-    /// Normalization constant for probability calculations
-    pub const NORMALIZATION: u32 = 1 << 16;
-
-    /// Origin X coordinate
-    pub const ORIGIN_X: i64 = 2048;
-
-    /// Origin Y coordinate
-    pub const ORIGIN_Y: i64 = 2048;
-
-    /// Maximum Y coordinate
-    pub const MAX_Y: i64 = 4096;
-
-    /// Create a new Dasher model
+    /// Create a new Dasher model with default settings
     pub fn new() -> Self {
+        Self::with_language_model(Box::new(CombinedLanguageModel::new(PPMOrder::Three)))
+    }
+
+    /// Create a new Dasher model with custom language model
+    pub fn with_language_model(language_model: Box<dyn LanguageModel>) -> Self {
         Self {
             root: None,
+            language_model: Some(language_model),
+            word_prediction: None,
             old_roots: VecDeque::new(),
             root_min: 0,
             root_max: 0,
             root_min_min: i64::MIN / (Self::NORMALIZATION as i64) / 2,
             root_max_max: i64::MAX / (Self::NORMALIZATION as i64) / 2,
+            display_offset: 0,
+            last_output: None,
+            goto_queue: VecDeque::new(),
+            require_conversion: false,
+            total_nats: 0.0,
+            node_creation_handlers: Vec::new(),
+            alphabet: None,
+            output_text: String::new(),
+        }
+    }
+
+    /// Load dictionary for language model
+    pub fn load_dictionary<P: AsRef<Path>>(&mut self, path: P) -> std::io::Result<()> {
+        if let Some(model) = &mut self.language_model {
+            if let Some(combined) = model.as_any().downcast_mut::<CombinedLanguageModel>() {
+                combined.dictionary_mut().load(path)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Get current probability distribution
+    pub fn get_probabilities(&self) -> Option<Vec<(char, f64)>> {
+        self.language_model.as_ref().map(|model| {
+            let context = self.output_text.as_str();
+            model.get_probs(context).into_iter().collect()
+        })
+    }
+
+    /// Update language model with new symbol
+    fn update_language_model(&mut self, symbol: char) {
+        if let Some(model) = &mut self.language_model {
+            model.enter_symbol(symbol);
+        }
+    }
             display_offset: 0,
             last_output: None,
             goto_queue: VecDeque::new(),
@@ -163,6 +198,7 @@ impl DasherModel {
     /// Append a character to the output text
     pub fn append_to_output(&mut self, c: char) {
         self.output_text.push(c);
+        self.update_language_model(c);
     }
 
     /// Set the output text
@@ -222,6 +258,12 @@ impl DasherModel {
 
     /// Expand a node by creating its children
     pub fn expand_node(&mut self, node: &Rc<RefCell<DasherNode>>) {
+        // Get word predictions if this is a word boundary
+        let predictions = if node.borrow().is_word_boundary() {
+            self.get_word_predictions()
+        } else {
+            Vec::new()
+        };
         let has_all_children = {
             let node_ref = node.borrow();
             node_ref.get_flag(NodeFlags::ALL_CHILDREN)

@@ -1,6 +1,29 @@
 //! # Alphabet Module
 //!
 //! This module contains the implementation of the alphabet used by Dasher.
+//! It provides comprehensive support for alphabet management, including:
+//! - Alphabet information and configuration
+//! - Symbol mapping and conversion
+//! - Group management
+//! - Color and display handling
+
+mod info;
+mod group;
+mod map;
+mod xml;
+mod colors;
+mod conversion;
+mod discovery;
+mod training;
+
+pub use info::{AlphabetInfo, ScreenOrientation, AlphabetConversion, Character};
+pub use group::GroupInfo;
+pub use map::AlphabetMap;
+pub use xml::{AlphabetXmlError, save_alphabet, load_alphabet};
+pub use colors::{Color, ColorScheme, ColorManager};
+pub use conversion::{ConversionManager, ConversionTable, ConversionRule};
+pub use discovery::{AlphabetDiscovery, DiscoveryError, DiscoveryResult};
+pub use training::{TrainingManager, TrainingStats, TrainingError};
 
 use std::collections::HashMap;
 
@@ -13,16 +36,16 @@ pub struct Symbol {
     /// The display text for this symbol
     pub display_text: String,
     
-    /// The foreground color for this symbol (RGB)
-    pub foreground_color: (u8, u8, u8),
+    /// The foreground color for this symbol
+    pub foreground_color: Color,
     
-    /// The background color for this symbol (RGB)
-    pub background_color: (u8, u8, u8),
+    /// The background color for this symbol
+    pub background_color: Color,
 }
 
 impl Symbol {
     /// Create a new symbol
-    pub fn new(character: char, display_text: &str, foreground_color: (u8, u8, u8), background_color: (u8, u8, u8)) -> Self {
+    pub fn new(character: char, display_text: &str, foreground_color: Color, background_color: Color) -> Self {
         Self {
             character,
             display_text: display_text.to_string(),
@@ -33,7 +56,12 @@ impl Symbol {
     
     /// Create a new symbol with default colors
     pub fn with_default_colors(character: char, display_text: &str) -> Self {
-        Self::new(character, display_text, (0, 0, 0), (255, 255, 255))
+        Self::new(
+            character,
+            display_text,
+            Color::new(0, 0, 0),     // Black text
+            Color::new(255, 255, 255) // White background
+        )
     }
 }
 
@@ -50,6 +78,26 @@ pub struct Alphabet {
 }
 
 impl Alphabet {
+    /// Create a conversion manager for this alphabet
+    pub fn create_conversion_manager(&self, info: &AlphabetInfo) -> ConversionManager {
+        ConversionManager::from_alphabet(info)
+    }
+    /// Create an alphabet from alphabet info
+    pub fn from_info(info: AlphabetInfo) -> Self {
+        let mut alphabet = Self::new(&info.id);
+        
+        for character in &info.characters {
+            let symbol = Symbol::new(
+                character.text.chars().next().unwrap_or(' '),
+                &character.display,
+                (0, 0, 0), // Default colors, should be from color group
+                (255, 255, 255)
+            );
+            alphabet.add_symbol(symbol);
+        }
+        
+        alphabet
+    }
     /// Create a new empty alphabet
     pub fn new(name: &str) -> Self {
         Self {

@@ -1,5 +1,7 @@
 # DasherCoreRust
 
+**Note: This project is currently in active development and is not yet ready for production use. It was wholly created by a LLM! Oh the irony.. that something the inference group made is now being inferred into a new language..**
+
 A Rust implementation of the Dasher text entry system core. This library provides the core functionality of Dasher, a zooming predictive text entry system designed for situations where keyboard input is impractical (for instance, accessibility or mobile devices).
 
 ## Releases
