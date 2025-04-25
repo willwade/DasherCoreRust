@@ -8,6 +8,9 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build-c-cpp-csharp:
     name: Build C/C++/C# (cdylib)
@@ -88,10 +91,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/linux/*
-            artifacts/macos/*
-            artifacts/windows/*
-            artifacts/wasm/*
+            artifacts/linux/**/*
+            artifacts/macos/**/*
+            artifacts/windows/**/*
+            artifacts/wasm/**/*
       - uses: actions/checkout@v4
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
