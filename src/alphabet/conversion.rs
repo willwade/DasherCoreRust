@@ -25,7 +25,20 @@ pub struct ConversionTable {
     context_map: HashMap<String, Vec<usize>>,
 }
 
+impl From<ConversionRule> for ConversionTable {
+    fn from(rule: ConversionRule) -> Self {
+        let mut table = ConversionTable::new();
+        table.add_rule(rule);
+        table
+    }
+}
+
 impl ConversionTable {
+    /// Get all rules in this table
+    pub fn get_all_rules(&self) -> &[ConversionRule] {
+        &self.rules
+    }
+    
     /// Create a new empty conversion table
     pub fn new() -> Self {
         Self {
@@ -83,6 +96,11 @@ pub struct ConversionManager {
 }
 
 impl ConversionManager {
+    /// Get rules for a specific conversion type
+    pub fn get_rules(&self, conversion_type: AlphabetConversion) -> Option<&ConversionTable> {
+        self.tables.get(&conversion_type)
+    }
+    
     /// Create a new conversion manager
     pub fn new() -> Self {
         Self {

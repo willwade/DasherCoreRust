@@ -5,10 +5,9 @@ use std::env;
 
 use super::{
     AlphabetInfo,
-    ColorScheme,
+    color_schemes::{ColorScheme, load_color_schemes},
     AlphabetXmlError,
     load_alphabet,
-    load_color_schemes,
 };
 
 /// Error type for alphabet discovery operations

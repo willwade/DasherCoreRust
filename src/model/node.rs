@@ -8,8 +8,13 @@ use std::rc::{Rc, Weak};
 
 /// Node flags representing the state of the node
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub struct NodeFlags(u32);
+pub enum NodeFlags {
+    NONE = 0,
+    SEEN = 1,
+    ALL_CHILDREN = 2,
+    COMMITTED = 4,
+    CONVERTED = 8,
+}
 
 impl NodeFlags {
     /// Default flags for a new node
@@ -291,7 +296,7 @@ impl DasherNode {
     /// Perform an action when this node is entered
     pub fn do_action(&mut self) {
         // If this node has a symbol, it should be added to the output
-        if let Some(symbol) = self.symbol {
+        if let Some(_symbol) = self.symbol {
             // The actual appending to output text is handled by the model
             // This is just a placeholder for now
         }

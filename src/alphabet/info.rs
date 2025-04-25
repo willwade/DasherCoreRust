@@ -15,7 +15,7 @@ pub enum ScreenOrientation {
 }
 
 /// Alphabet conversion type
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AlphabetConversion {
     /// Normal alphabet, contains symbols to output
     None,

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::model::word_generator::{WordGenerator, PredictiveWordGenerator};
-use crate::model::language_model::LanguageModel;
+use crate::model::language::LanguageModel;
 
 /// Manages word prediction and generation for the Dasher model
 pub struct WordPredictionManager {

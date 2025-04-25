@@ -1,16 +1,16 @@
-use quick_xml::{Reader, Writer, events::{Event, BytesStart, BytesEnd}};
+use quick_xml::{Reader, Writer, events::{Event, BytesStart, BytesEnd, BytesText, BytesDecl}};
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::fs::File;
 use std::path::Path;
 
-use crate::alphabet::{
+use super::{
     AlphabetInfo,
+    color_schemes::ColorScheme,
     Character,
     GroupInfo,
     ScreenOrientation,
     AlphabetConversion,
     Color,
-    ColorScheme,
     ColorManager,
 };
 
@@ -23,6 +23,8 @@ pub enum AlphabetXmlError {
     Xml(quick_xml::Error),
     /// Invalid data in XML
     InvalidData(String),
+    /// Invalid format
+    InvalidFormat,
 }
 
 impl From<io::Error> for AlphabetXmlError {
@@ -33,7 +35,19 @@ impl From<io::Error> for AlphabetXmlError {
 
 impl From<quick_xml::Error> for AlphabetXmlError {
     fn from(err: quick_xml::Error) -> Self {
-        AlphabetXmlError::Xml(err)
+        AlphabetXmlError::XmlError(err)
+    }
+}
+
+impl From<quick_xml::events::attributes::AttrError> for AlphabetXmlError {
+    fn from(err: quick_xml::events::attributes::AttrError) -> Self {
+        AlphabetXmlError::XmlError(quick_xml::Error::from(err))
+    }
+}
+
+impl From<std::num::ParseIntError> for AlphabetXmlError {
+    fn from(_err: std::num::ParseIntError) -> Self {
+        AlphabetXmlError::InvalidFormat
     }
 }
 
@@ -225,11 +239,11 @@ impl<W: Write> AlphabetXmlWriter<W> {
                 self.writer.write_event(Event::End(BytesEnd::borrowed(pair_elem.name())))?;
             }
 
-            self.writer.write_event(Event::End(BytesEnd::borrowed(scheme_elem.name())))?;
+            self.writer.write_event(Event::End(BytesEnd::new("scheme")))?;
         }
 
         // Close color schemes element
-        self.writer.write_event(Event::End(BytesEnd::borrowed(schemes_elem.name())))?;
+        self.writer.write_event(Event::End(BytesEnd::new("colorschemes")))?;
         Ok(())
     }
     /// Create a new alphabet XML writer
@@ -249,7 +263,7 @@ impl<W: Write> AlphabetXmlWriter<W> {
         ))?;
 
         // Write alphabet element
-        let mut alphabet_elem = BytesStart::owned(b"alphabet".to_vec(), "alphabet".len());
+        let mut alphabet_elem = BytesStart::new("alphabet");
         alphabet_elem.push_attribute(("name", alphabet.id.as_str()));
         self.writer.write_event(Event::Start(alphabet_elem.clone()))?;
 
@@ -260,24 +274,24 @@ impl<W: Write> AlphabetXmlWriter<W> {
 
         // Write characters
         for character in &alphabet.characters {
-            let mut char_elem = BytesStart::owned(b"character".to_vec(), "character".len());
+            let mut char_elem = BytesStart::new("character");
             char_elem.push_attribute(("text", character.text.as_str()));
             char_elem.push_attribute(("display", character.display.as_str()));
             if character.fixed_probability >= 0.0 {
                 char_elem.push_attribute(("p", character.fixed_probability.to_string().as_str()));
             }
             self.writer.write_event(Event::Start(char_elem.clone()))?;
-            self.writer.write_event(Event::End(BytesEnd::borrowed(char_elem.name())))?;
+            self.writer.write_event(Event::End(BytesEnd::new("character")))?;
         }
 
         // Close alphabet element
-        self.writer.write_event(Event::End(BytesEnd::borrowed(alphabet_elem.name())))?;
+        self.writer.write_event(Event::End(BytesEnd::new("alphabet")))?;
         Ok(())
     }
 
     /// Write a setting element
     fn write_setting(&mut self, name: &str, value: &str) -> Result<(), AlphabetXmlError> {
-        let mut elem = BytesStart::owned(b"setting".to_vec(), "setting".len());
+        let mut elem = BytesStart::new("setting");
         elem.push_attribute(("name", name));
         elem.push_attribute(("value", value));
         self.writer.write_event(Event::Empty(elem))?;

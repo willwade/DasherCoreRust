@@ -246,20 +246,24 @@ impl TrainingManager {
                 writeln!(file, "# Conversion rules")?;
                 match self.alphabet.conversion_type {
                     AlphabetConversion::Mandarin => {
-                        for rule in conversion.get_rules(AlphabetConversion::Mandarin) {
-                            writeln!(file, "{}={}", rule.input, rule.output)?;
-                        }
-                    }
-                    AlphabetConversion::RoutingContextInsensitive |
-                    AlphabetConversion::RoutingContextSensitive => {
-                        for rule in conversion.get_rules(self.alphabet.conversion_type) {
-                            if !rule.context.is_empty() {
-                                writeln!(file, "{}:{}={}", rule.context, rule.input, rule.output)?;
-                            } else {
+                        if let Some(table) = conversion.get_rules(AlphabetConversion::Mandarin) {
+                            for rule in table.get_all_rules() {
                                 writeln!(file, "{}={}", rule.input, rule.output)?;
                             }
                         }
-                    }
+                    },
+                    AlphabetConversion::RoutingContextInsensitive |
+                    AlphabetConversion::RoutingContextSensitive => {
+                        if let Some(table) = conversion.get_rules(self.alphabet.conversion_type) {
+                            for rule in table.get_all_rules() {
+                                if !rule.context.is_empty() {
+                                    writeln!(file, "{}:{}={}", rule.context, rule.input, rule.output)?;
+                                } else {
+                                    writeln!(file, "{}={}", rule.input, rule.output)?;
+                                }
+                            }
+                        }
+                    },
                     _ => {}
                 }
             }

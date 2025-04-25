@@ -149,8 +149,13 @@ impl PPMLanguageModel {
 
             let mut node = self.root.clone();
             for c in context_slice.chars() {
-                if let Some(child) = node.borrow().children.get(&c) {
-                    node = child.clone();
+                let next_node = if let Some(child) = node.borrow().children.get(&c) {
+                    Some(child.clone())
+                } else {
+                    None
+                };
+                if let Some(child) = next_node {
+                    node = child;
                 } else {
                     break;
                 }

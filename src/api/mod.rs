@@ -5,7 +5,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::model::{DasherModel, DasherNode};
+use crate::model::{DasherModel, node::DasherNode};
 use crate::view::{DasherScreen, DasherView, DasherViewSquare, Orientation};
 use crate::input::{DasherInput, InputFilter, DefaultFilter, InputManager, VirtualKey};
 use crate::settings::{Settings, Parameter};

@@ -4,6 +4,8 @@
 
 mod filter;
 mod device;
+mod button;
+mod circle_start;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -13,6 +15,8 @@ use crate::view::DasherView;
 
 pub use filter::{InputFilter, DefaultFilter};
 pub use device::{DasherInput, MouseInput};
+pub use button::{ButtonHandler, ButtonConfig, ButtonMode};
+pub use circle_start::{CircleStartHandler, CircleStartConfig};
 
 /// Virtual key codes for keyboard input
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -78,6 +82,23 @@ pub enum VirtualKey {
     Other(char),
 }
 
+/// Input coordinates
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Coordinates {
+    /// X coordinate
+    pub x: f64,
+    /// Y coordinate
+    pub y: f64,
+}
+
+/// Input device trait
+pub trait InputDevice {
+    /// Get current coordinates
+    fn get_coordinates(&self) -> Coordinates;
+    /// Check if a button is pressed
+    fn is_button_pressed(&self, button: u32) -> bool;
+}
+
 /// Input manager that handles input devices and filters
 pub struct InputManager {
     /// Current input device
@@ -85,6 +106,12 @@ pub struct InputManager {
     
     /// Current input filter
     input_filter: Option<Box<dyn InputFilter>>,
+    
+    /// Button handler
+    button_handler: Option<ButtonHandler>,
+    
+    /// Circle start handler
+    circle_start: Option<CircleStartHandler>,
     
     /// Whether the input is paused
     paused: bool,
@@ -96,8 +123,36 @@ impl InputManager {
         Self {
             input_device: None,
             input_filter: Some(Box::new(DefaultFilter::new())),
+            button_handler: Some(ButtonHandler::new(ButtonConfig::default())),
+            circle_start: Some(CircleStartHandler::new(CircleStartConfig::default())),
             paused: false,
         }
+    }
+
+    /// Set button mode
+    pub fn set_button_mode(&mut self, mode: ButtonMode) {
+        if let Some(handler) = &mut self.button_handler {
+            handler.set_mode(mode);
+        }
+    }
+
+    /// Get current button mode
+    pub fn button_mode(&self) -> Option<ButtonMode> {
+        self.button_handler.as_ref().map(|h| h.mode())
+    }
+
+    /// Enable/disable circle start
+    pub fn set_circle_start_enabled(&mut self, enabled: bool) {
+        if enabled && self.circle_start.is_none() {
+            self.circle_start = Some(CircleStartHandler::new(CircleStartConfig::default()));
+        } else if !enabled {
+            self.circle_start = None;
+        }
+    }
+
+    /// Check if circle start is enabled
+    pub fn is_circle_start_enabled(&self) -> bool {
+        self.circle_start.is_some()
     }
     
     /// Set the input device
@@ -120,9 +175,26 @@ impl InputManager {
         if self.paused {
             return;
         }
-        
-        if let (Some(input), Some(filter)) = (&mut self.input_device, &mut self.input_filter) {
-            filter.process(input.as_mut(), time, model, view);
+
+        // Process circle start first if enabled
+        if let Some(circle) = &mut self.circle_start {
+            if let Some(device) = &self.input_device {
+                circle.update(device.as_ref(), model, view);
+            }
+        }
+
+        // Process button handler
+        if let Some(handler) = &mut self.button_handler {
+            if let Some(device) = &self.input_device {
+                handler.update(device.as_ref(), model, view);
+            }
+        }
+
+        // Process main input filter
+        if let Some(filter) = &mut self.input_filter {
+            if let Some(device) = &self.input_device {
+                filter.update(device.as_ref(), model, view);
+            }
         }
     }
     

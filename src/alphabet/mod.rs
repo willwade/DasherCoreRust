@@ -15,12 +15,13 @@ mod colors;
 mod conversion;
 mod discovery;
 mod training;
+mod color_schemes;
 
 pub use info::{AlphabetInfo, ScreenOrientation, AlphabetConversion, Character};
 pub use group::GroupInfo;
 pub use map::AlphabetMap;
 pub use xml::{AlphabetXmlError, save_alphabet, load_alphabet};
-pub use colors::{Color, ColorScheme, ColorManager};
+pub use colors::{Color, ColorManager};
 pub use conversion::{ConversionManager, ConversionTable, ConversionRule};
 pub use discovery::{AlphabetDiscovery, DiscoveryError, DiscoveryResult};
 pub use training::{TrainingManager, TrainingStats, TrainingError};
@@ -90,8 +91,8 @@ impl Alphabet {
             let symbol = Symbol::new(
                 character.text.chars().next().unwrap_or(' '),
                 &character.display,
-                (0, 0, 0), // Default colors, should be from color group
-                (255, 255, 255)
+                Color::new(0, 0, 0), // Default colors, should be from color group
+                Color::new(255, 255, 255)
             );
             alphabet.add_symbol(symbol);
         }

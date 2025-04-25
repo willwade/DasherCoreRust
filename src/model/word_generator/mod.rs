@@ -4,6 +4,10 @@ use std::io;
 use crate::alphabet::AlphabetMap;
 use crate::alphabet::AlphabetInfo;
 
+mod predictive;
+
+pub use predictive::PredictiveWordGenerator;
+
 /// Trait for word generators that can provide words based on various conditions.
 /// 
 /// Word generators encapsulate logic for generating words based on implementation-specific

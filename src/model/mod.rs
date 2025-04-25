@@ -3,7 +3,7 @@
 //! This module contains the core Dasher model implementation, including
 //! the arithmetic coding algorithm and node tree management.
 
-mod node;
+pub mod node;
 mod language;
 pub mod word_generator;
 mod word_prediction;
@@ -14,8 +14,8 @@ use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 use std::path::Path;
 
-use node::DasherNode;
-use language::{LanguageModel, CombinedLanguageModel, PPMOrder, Dictionary};
+use node::{DasherNode, NodeFlags};
+use language::{CombinedLanguageModel, PPMOrder, Dictionary};
 pub use language::LanguageModel;
 
 use crate::view::{DasherScreen, Color};
@@ -105,7 +105,7 @@ impl DasherModel {
             require_conversion: false,
             total_nats: 0.0,
             node_creation_handlers: Vec::new(),
-            alphabet: None,
+            alphabet: Some(Alphabet::english()),
             output_text: String::new(),
         }
     }
@@ -132,17 +132,6 @@ impl DasherModel {
     fn update_language_model(&mut self, symbol: char) {
         if let Some(model) = &mut self.language_model {
             model.enter_symbol(symbol);
-        }
-    }
-            display_offset: 0,
-            last_output: None,
-            goto_queue: VecDeque::new(),
-            require_conversion: false,
-            total_nats: 0.0,
-            node_creation_handlers: Vec::new(),
-            alphabet: Some(Alphabet::english()),
-            language_model: None,
-            output_text: String::new(),
         }
     }
 

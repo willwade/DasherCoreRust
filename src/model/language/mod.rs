@@ -4,7 +4,10 @@ mod dictionary;
 pub use ppm::{PPMLanguageModel, PPMOrder};
 pub use dictionary::{Dictionary, DictionaryEntry};
 
-use std::collections::HashMap;
+use std::path::Path;
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
+use std::collections::{HashMap, HashSet};
 
 /// Language model trait
 pub trait LanguageModel {

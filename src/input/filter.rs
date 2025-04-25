@@ -30,6 +30,9 @@ pub trait InputFilter {
     /// Check if the filter is paused
     fn is_paused(&self) -> bool;
 
+    /// Reset the filter to its initial state
+    fn reset(&mut self);
+
     /// Activate the filter
     fn activate(&mut self);
 
@@ -124,6 +127,12 @@ impl DefaultFilter {
 }
 
 impl InputFilter for DefaultFilter {
+    fn reset(&mut self) {
+        // Reset to default state
+        self.last_x = 0;
+        self.last_y = 0;
+        self.paused = false;
+    }
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         // Get the coordinates from the input device
         if let Some((x, y)) = input.get_dasher_coordinates(view) {
@@ -227,6 +236,12 @@ impl OneDimensionalFilter {
 }
 
 impl InputFilter for OneDimensionalFilter {
+    fn reset(&mut self) {
+        // Reset to default state
+        self.last_x = 0;
+        self.last_y = 0;
+        self.paused = false;
+    }
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         // Get the coordinates from the input device
         if let Some((_, y)) = input.get_dasher_coordinates(view) {
@@ -297,10 +312,15 @@ impl ButtonInputFilter {
 }
 
 impl InputFilter for ButtonInputFilter {
+    fn reset(&mut self) {
+        // Reset to default state
+        self.last_button_state = false;
+        self.paused = false;
+    }
     fn process(&mut self, _input: &mut dyn DasherInput, _time: u64, _model: &mut DasherModel, _view: &mut dyn DasherView) {
         // Button filter processes only on key events
     }
-    fn key_down(&mut self, _time: u64, key: VirtualKey, model: &mut DasherModel, _view: &mut dyn DasherView) {
+    fn key_down(&mut self, _time: u64, key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {
         // Example: use Space as the button
         if key == VirtualKey::Space {
             if !self.last_button_state {
@@ -343,7 +363,13 @@ impl StylusInputFilter {
 }
 
 impl InputFilter for StylusInputFilter {
-    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+    fn reset(&mut self) {
+        // Reset to default state
+        self.last_x = 0;
+        self.last_y = 0;
+        self.paused = false;
+    }
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, _model: &mut DasherModel, view: &mut dyn DasherView) {
         // Use stylus/touch coordinates to control navigation
         if let Some((x, y)) = input.get_dasher_coordinates(view) {
             if (x, y) != (self.last_x, self.last_y) {
@@ -391,6 +417,11 @@ impl ClickFilter {
 }
 
 impl InputFilter for ClickFilter {
+    fn reset(&mut self) {
+        // Reset to default state
+        self.last_click = None;
+        self.paused = false;
+    }
     fn process(&mut self, _input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, _view: &mut dyn DasherView) {
         // In click mode, we only move when a click is registered
         if self.clicked {
