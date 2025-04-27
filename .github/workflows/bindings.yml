@@ -54,7 +54,7 @@ jobs:
       - name: Add wasm32 target
         run: rustup target add wasm32-unknown-unknown
       - name: Build WASM
-        run: cargo build --release --target wasm32-unknown-unknown --features wasm
+        run: cargo build --release --target wasm32-unknown-unknown --features wasm,js
       - name: Install matching wasm-bindgen CLI
         run: cargo install wasm-bindgen-cli --version 0.2.88 --force
       - name: Install wasm-pack
@@ -62,7 +62,7 @@ jobs:
       - name: Clean wasm-pack cache
         run: rm -rf ~/.cache/.wasm-pack
       - name: Build WASM JS bindings
-        run: wasm-pack build --release --target web -- --features wasm
+        run: wasm-pack build --release --target web -- --features wasm,js
       - name: Upload WASM artifacts
         uses: actions/upload-artifact@v4
         with:
