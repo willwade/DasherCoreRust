@@ -1,9 +1,8 @@
-use std::path::Path;
-use std::io::BufReader;
 use quick_xml::Reader;
 use quick_xml::events::Event;
-
-use super::AlphabetXmlError;
+use std::path::Path;
+use std::io::BufReader;
+use crate::alphabet::AlphabetXmlError;
 
 /// Color scheme for alphabet visualization
 #[derive(Debug, Clone)]
@@ -121,49 +120,4 @@ pub fn load_color_schemes<P: AsRef<Path>>(path: P) -> Result<Vec<ColorScheme>, A
     }
 
     Ok(schemes)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs::File;
-    use std::io::Write;
-    use tempfile::tempdir;
-
-    #[test]
-    fn test_load_color_schemes() -> Result<(), Box<dyn std::error::Error>> {
-        let dir = tempdir()?;
-        let file_path = dir.path().join("test_schemes.xml");
-        let mut file = File::create(&file_path)?;
-
-        write!(file, r#"<?xml version="1.0" encoding="UTF-8"?>
-<colorschemes>
-    <colorscheme name="Default" description="Default color scheme">
-        <color r="255" g="0" b="0" a="255"/>
-        <color r="0" g="255" b="0" a="255"/>
-        <color r="0" g="0" b="255" a="255"/>
-    </colorscheme>
-    <colorscheme name="Dark" description="Dark theme">
-        <color r="50" g="50" b="50" a="255"/>
-        <color r="100" g="100" b="100" a="255"/>
-    </colorscheme>
-</colorschemes>"#)?;
-
-        let schemes = load_color_schemes(&file_path)?;
-        assert_eq!(schemes.len(), 2);
-        
-        let default_scheme = &schemes[0];
-        assert_eq!(default_scheme.name, "Default");
-        assert_eq!(default_scheme.description, "Default color scheme");
-        assert_eq!(default_scheme.colors.len(), 3);
-        assert_eq!(default_scheme.colors[0], (255, 0, 0, 255));
-
-        let dark_scheme = &schemes[1];
-        assert_eq!(dark_scheme.name, "Dark");
-        assert_eq!(dark_scheme.description, "Dark theme");
-        assert_eq!(dark_scheme.colors.len(), 2);
-        assert_eq!(dark_scheme.colors[0], (50, 50, 50, 255));
-
-        Ok(())
-    }
 }

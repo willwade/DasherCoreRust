@@ -276,8 +276,8 @@ mod tests {
 
         // Set center and test point inside circle
         handler.set_center(0.0, 0.0);
-        assert!(handler.is_inside_circle(&Coordinates { x: 10.0, y: 10.0 }));
-        assert!(!handler.is_inside_circle(&Coordinates { x: 100.0, y: 100.0 }));
+        assert!(handler.is_in_circle(&Coordinates { x: 10.0, y: 10.0 }));
+        assert!(!handler.is_in_circle(&Coordinates { x: 100.0, y: 100.0 }));
     }
 
     #[test]

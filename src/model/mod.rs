@@ -32,6 +32,9 @@ pub type NodeCreationEvent = Box<dyn Fn(&Rc<RefCell<DasherNode>>)>;
 pub struct DasherModel {
     // ... existing fields ...
 
+    /// Actions manager
+    pub action_manager: crate::action::ActionManager,
+
     /// Root node of the tree
     /// Word prediction manager
     word_prediction: Option<WordPredictionManager>,
@@ -90,8 +93,12 @@ impl DasherModel {
     /// Y origin constant for coordinate calculations
     pub const ORIGIN_Y: i64 = 0;
     /// Placeholder for word predictions
-    pub fn get_word_predictions(&self) -> Vec<String> {
-        Vec::new()
+    pub fn get_word_predictions(&mut self) -> Vec<String> {
+        if let Some(manager) = &mut self.word_prediction {
+            manager.get_predictions(&self.output_text)
+        } else {
+            Vec::new()
+        }
     }
     /// Maximum Y coordinate for the model (placeholder value)
     pub const MAX_Y: i64 = 1 << 20;
@@ -104,10 +111,20 @@ impl DasherModel {
 
     /// Create a new Dasher model with custom language model
     pub fn with_language_model(language_model: Box<dyn LanguageModel>) -> Self {
+        use crate::wordgen::BasicWordGenerator;
+        use crate::model::word_prediction::WordPredictionManager;
+        use crate::action::{ActionManager, BackspaceAction, SpaceAction, AcceptAction};
+        let mut word_prediction = WordPredictionManager::new(10, 32);
+        word_prediction.add_generator(Box::new(BasicWordGenerator));
+        let mut action_manager = ActionManager::new();
+        action_manager.register_action(Box::new(BackspaceAction));
+        action_manager.register_action(Box::new(SpaceAction));
+        action_manager.register_action(Box::new(AcceptAction));
         Self {
+            action_manager,
             root: None,
             language_model: Some(language_model),
-            word_prediction: None,
+            word_prediction: Some(word_prediction),
             old_roots: VecDeque::new(),
             root_min: 0,
             root_max: 0,
@@ -261,6 +278,15 @@ impl DasherModel {
 
     /// Expand a node by creating its children
     pub fn expand_node(&mut self, node: &Rc<RefCell<DasherNode>>) {
+        // Insert action nodes as children (e.g., at the end)
+        // We'll use a special label and NodeFlags for action nodes
+        for action in self.action_manager.all_actions() {
+            let mut action_node = DasherNode::new(0, Some(action.label().to_string()));
+            action_node.set_flag(NodeFlags::CONTROL, true); // Mark as control/action node
+            action_node.set_flag(NodeFlags::ALL_CHILDREN, true); // No further expansion
+            action_node.set_parent(Rc::downgrade(node));
+            node.borrow_mut().add_child(Rc::new(RefCell::new(action_node)));
+        }
 
         // Get word predictions if this is a word boundary
         let predictions = if node.borrow().is_word_boundary() {

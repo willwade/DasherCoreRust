@@ -357,6 +357,7 @@ mod tests {
         // Create a test alphabet
         let mut alphabet = AlphabetInfo::new("test".to_string());
         alphabet.training_file = "training.txt".to_string();
+        use crate::alphabet::ScreenOrientation;
         alphabet.orientation = ScreenOrientation::LeftToRight;
         alphabet.characters.push(Character {
             display: "a".to_string(),
@@ -378,12 +379,12 @@ mod tests {
         let mut found_alphabet = false;
 
         loop {
-            match reader.read_event(&mut buf).unwrap() {
-                Event::Start(ref e) if e.name() == b"alphabet" => {
+            match reader.read_event_into(&mut buf).unwrap() {
+                Event::Start(ref e) if e.name() == quick_xml::name::QName(b"alphabet") => {
                     found_alphabet = true;
                     let attrs: Vec<_> = e.attributes().collect::<Result<_, _>>().unwrap();
                     let name = attrs.iter()
-                        .find(|attr| attr.key == b"name")
+                        .find(|attr| attr.key == quick_xml::name::QName(b"name"))
                         .unwrap()
                         .value
                         .as_ref();
