@@ -37,7 +37,7 @@ mockall = "0.11"
 default = []
 wasm = ["wasm-bindgen", "js-sys", "web-sys"]
 simd = []
-js = ["getrandom/js"]
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
