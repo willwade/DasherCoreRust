@@ -138,12 +138,24 @@ impl ConversionManager {
     fn convert_mandarin(&self, text: &str) -> String {
         if let Some(table) = self.tables.get(&AlphabetConversion::Mandarin) {
             let mut result = String::new();
-            for c in text.chars() {
-                let input = c.to_string();
-                if let Some(rule) = table.get_rules_for_input(&input).first() {
-                    result.push_str(&rule.output);
-                } else {
-                    result.push(c);
+            let mut remaining = text;
+            while !remaining.is_empty() {
+                let mut matched = false;
+                // Try to match the longest possible substring
+                for len in (1..=remaining.len()).rev() {
+                    let input = &remaining[..len];
+                    if let Some(rule) = table.get_rules_for_input(input).first() {
+                        result.push_str(&rule.output);
+                        remaining = &remaining[len..];
+                        matched = true;
+                        break;
+                    }
+                }
+                if !matched {
+                    // No rule matched, copy first char
+                    let ch = remaining.chars().next().unwrap();
+                    result.push(ch);
+                    remaining = &remaining[ch.len_utf8()..];
                 }
             }
             result

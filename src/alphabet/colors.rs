@@ -43,11 +43,19 @@ impl Color {
 
     /// Get the luminance of the color (perceived brightness)
     pub fn luminance(&self) -> f32 {
-        // Using the formula from W3C: https://www.w3.org/TR/WCAG20/#relativeluminancedef
-        let r = (self.r as f32) / 255.0;
-        let g = (self.g as f32) / 255.0;
-        let b = (self.b as f32) / 255.0;
-        
+        // WCAG 2.0 relative luminance with gamma correction
+        // See: https://www.w3.org/TR/WCAG20/#relativeluminancedef
+        fn channel(c: u8) -> f32 {
+            let c = c as f32 / 255.0;
+            if c <= 0.03928 {
+                c / 12.92
+            } else {
+                ((c + 0.055) / 1.055).powf(2.4)
+            }
+        }
+        let r = channel(self.r);
+        let g = channel(self.g);
+        let b = channel(self.b);
         0.2126 * r + 0.7152 * g + 0.0722 * b
     }
 
@@ -206,11 +214,12 @@ mod tests {
     fn test_color_contrast() {
         let white = Color::new(255, 255, 255);
         let black = Color::new(0, 0, 0);
-        let gray = Color::new(120, 120, 120);
+        let gray_dark = Color::new(100, 100, 100);
+        let gray_light = Color::new(180, 180, 180);
 
         assert!(white.has_good_contrast_with(&black));
-        assert!(!gray.has_good_contrast_with(&white));
-        assert!(!gray.has_good_contrast_with(&black));
+        assert!(!gray_light.has_good_contrast_with(&white)); // light gray vs white: not enough contrast
+        assert!(!gray_dark.has_good_contrast_with(&black));  // dark gray vs black: not enough contrast
     }
 
     #[test]
