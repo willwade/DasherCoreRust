@@ -72,7 +72,7 @@ impl BaseWordGenerator {
 /// A word generator that reads words from a file
 pub struct FileWordGenerator {
     /// Base word generator functionality
-    base: BaseWordGenerator,
+    pub base: BaseWordGenerator,
     /// Path to the word list file
     path: Box<Path>,
     /// Whether to accept user-added words

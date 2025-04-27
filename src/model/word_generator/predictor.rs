@@ -3,6 +3,8 @@ use crate::model::language_model::LanguageModel;
 
 /// A word generator that uses a language model for prediction
 pub struct PredictiveWordGenerator<M: LanguageModel> {
+    /// Base word generator functionality (for symbol conversion)
+    pub base: crate::model::word_generator::BaseWordGenerator,
     /// The language model used for prediction
     language_model: M,
     /// Current context for prediction
@@ -17,8 +19,9 @@ pub struct PredictiveWordGenerator<M: LanguageModel> {
 
 impl<M: LanguageModel> PredictiveWordGenerator<M> {
     /// Create a new predictive word generator
-    pub fn new(language_model: M, max_predictions: usize) -> Self {
+    pub fn new(language_model: M, max_predictions: usize, base: crate::model::word_generator::BaseWordGenerator) -> Self {
         Self {
+            base,
             language_model,
             context: Vec::new(),
             max_predictions,
@@ -64,22 +67,22 @@ impl<M: LanguageModel> WordGenerator for PredictiveWordGenerator<M> {
     }
 
     fn get_symbols(&self, word: &str) -> Vec<u32> {
-        // This should be implemented based on your alphabet mapping
-        // For now, we'll return an empty vector
-        Vec::new()
+        self.base.string_to_symbols(word)
     }
 }
 
 /// A word generator that combines multiple word generators
 pub struct CompositeWordGenerator {
+    pub base: crate::model::word_generator::BaseWordGenerator,
     generators: Vec<Box<dyn WordGenerator>>,
     current_generator: usize,
 }
 
 impl CompositeWordGenerator {
     /// Create a new composite word generator
-    pub fn new(generators: Vec<Box<dyn WordGenerator>>) -> Self {
+    pub fn new(generators: Vec<Box<dyn WordGenerator>>, base: crate::model::word_generator::BaseWordGenerator) -> Self {
         Self {
+            base,
             generators,
             current_generator: 0,
         }
@@ -98,8 +101,7 @@ impl WordGenerator for CompositeWordGenerator {
     }
 
     fn get_symbols(&self, word: &str) -> Vec<u32> {
-        // Use the first generator's symbol mapping
-        self.generators.first()?.get_symbols(word)
+        self.base.string_to_symbols(word)
     }
 }
 
@@ -142,7 +144,10 @@ mod tests {
     #[test]
     fn test_predictive_word_generator() {
         let model = MockLanguageModel::new();
-        let mut generator = PredictiveWordGenerator::new(model, 2);
+        let alphabet_info = crate::alphabet::AlphabetInfo::default();
+        let alphabet_map = crate::alphabet::AlphabetMap::default();
+        let base = crate::model::word_generator::BaseWordGenerator::new(alphabet_info, alphabet_map);
+        let mut generator = PredictiveWordGenerator::new(model, 2, base);
 
         generator.update_context(vec!["hello".to_string()]);
 

@@ -3,6 +3,8 @@ use crate::model::language::LanguageModel;
 
 /// A word generator that uses a language model to predict words
 pub struct PredictiveWordGenerator {
+    /// Base word generator functionality (for symbol conversion)
+    pub base: crate::model::word_generator::BaseWordGenerator,
     /// The language model used for prediction
     language_model: Box<dyn LanguageModel>,
     /// Maximum number of predictions to return
@@ -11,8 +13,9 @@ pub struct PredictiveWordGenerator {
 
 impl PredictiveWordGenerator {
     /// Create a new predictive word generator
-    pub fn new(language_model: Box<dyn LanguageModel>, max_predictions: usize) -> Self {
+    pub fn new(language_model: Box<dyn LanguageModel>, max_predictions: usize, base: crate::model::word_generator::BaseWordGenerator) -> Self {
         Self {
+            base,
             language_model,
             max_predictions,
         }
@@ -25,9 +28,8 @@ impl WordGenerator for PredictiveWordGenerator {
         None
     }
 
-    fn get_symbols(&self, _word: &str) -> Vec<u32> {
-        // Not implemented for predictive generator
-        Vec::new()
+    fn get_symbols(&self, word: &str) -> Vec<u32> {
+        self.base.string_to_symbols(word)
     }
 }
 
