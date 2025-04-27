@@ -267,9 +267,11 @@ mod tests {
         // Test double tap
         let now = Instant::now();
         mode.handle_press(now);
+        mode.handle_release(now);
         thread::sleep(Duration::from_millis(100));
         let now = Instant::now();
         mode.handle_press(now);
+        mode.handle_release(now);
         assert_eq!(mode.state.press_count, 2);
         assert_eq!(mode.state.current_action, MultiPressAction::DoubleTap);
     }

@@ -167,6 +167,7 @@ mod tests {
         }
 
         // Test predictions
+        model.current_word = "hel".to_string();
         let probs = model.get_probs("hel");
         assert!(probs.contains_key(&'l'));
         assert!(probs.contains_key(&'p'));
