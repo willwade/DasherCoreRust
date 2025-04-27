@@ -20,6 +20,19 @@ pub trait WordGenerator {
     /// Gets the symbols for the current word.
     /// Returns a vector of symbol indices that correspond to the alphabet map.
     fn get_symbols(&self, word: &str) -> Vec<u32>;
+
+    /// Generate a list of words for the given context (default: repeatedly call next_word)
+    fn generate_words(&mut self, context: &str) -> Vec<String> {
+        let mut words = Vec::new();
+        for _ in 0..100 {
+            if let Some(word) = self.next_word() {
+                words.push(word);
+            } else {
+                break;
+            }
+        }
+        words
+    }
 }
 
 /// Error types for word generator operations
@@ -149,6 +162,21 @@ impl FileWordGenerator {
 }
 
 impl WordGenerator for FileWordGenerator {
+
+    fn generate_words(&mut self, _context: &str) -> Vec<String> {
+        let mut words = Vec::new();
+        let original_index = self.current_index;
+        for _ in 0..100 {
+            if let Some(word) = self.next_word() {
+                words.push(word);
+            } else {
+                break;
+            }
+        }
+        self.current_index = original_index; // restore state
+        words
+    }
+
     fn next_word(&mut self) -> Option<String> {
         use std::io::{BufRead, BufReader, Seek, SeekFrom};
         use std::fs::File;

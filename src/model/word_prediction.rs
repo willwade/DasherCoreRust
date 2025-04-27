@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use crate::wordgen::WordGenerator;
+use crate::model::word_generator::WordGenerator;
 
 use crate::model::language::LanguageModel;
 
 /// Manages word prediction and generation for the Dasher model
 pub struct WordPredictionManager {
     /// The word generators available
-    generators: Vec<Box<dyn WordGenerator>>,
+    generators: Vec<Box<dyn crate::model::word_generator::WordGenerator>>,
     /// Cache of predicted words for each context
     prediction_cache: HashMap<String, Vec<String>>,
     /// Maximum number of predictions to cache
@@ -45,7 +45,7 @@ impl WordPredictionManager {
         let mut predictions = Vec::new();
         
         // Get predictions from all generators
-        for generator in &self.generators {
+        for generator in &mut self.generators {
             let words = generator.generate_words(context);
             for word in words {
                 if !predictions.contains(&word) {
@@ -91,34 +91,42 @@ pub fn create_default_manager<M: LanguageModel + 'static>(
     manager
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::model::language_model::LanguageModel;
-//
-//     struct MockLanguageModel;
-//
-//     impl LanguageModel for MockLanguageModel {
-//         fn predict_next(&self, _context: &[String], max_count: usize) -> Vec<String> {
-//             vec!["test".to_string(), "word".to_string()][..max_count].to_vec()
-//         }
-//
-//         fn get_probability(&self, _context: &[String], _word: &str) -> f64 {
-//             1.0
-//         }
-//     }
-//
-//     #[test]
-//     fn test_word_prediction_manager() {
-//         let mut manager = WordPredictionManager::new(2, 2);
-//         let model = MockLanguageModel;
-//         let predictor = PredictiveWordGenerator::new(model, 2);
-//         manager.add_generator(Box::new(predictor));
-//
-//         let context = vec!["hello".to_string()];
-//         let predictions = manager.get_predictions(&context);
-//         assert_eq!(predictions.len(), 2);
-//         assert_eq!(predictions[0], "test");
-//         assert_eq!(predictions[1], "word");
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::word_generator::{PredictiveWordGenerator, BaseWordGenerator, WordGenerator};
+    use crate::alphabet::{AlphabetInfo, AlphabetMap};
+    use crate::model::language::LanguageModel;
+    use std::collections::HashMap;
+
+    struct MockLanguageModel;
+    use std::any::Any;
+    impl LanguageModel for MockLanguageModel {
+        fn get_probs(&self, _context: &str) -> HashMap<char, f64> {
+            let mut map = HashMap::new();
+            map.insert('t', 0.7);
+            map.insert('w', 0.3);
+            map
+        }
+        fn enter_symbol(&mut self, _symbol: char) {}
+        fn reset(&mut self) {}
+        fn as_any(&mut self) -> &mut dyn Any { self }
+    }
+
+    #[test]
+    fn test_word_prediction_manager_with_predictive() {
+        let mut manager = WordPredictionManager::new(2, 2);
+        let model = Box::new(MockLanguageModel);
+        let alphabet_info = AlphabetInfo::default();
+        let alphabet_map = AlphabetMap::default();
+        let base = BaseWordGenerator::new(alphabet_info, alphabet_map);
+        let mut predictor = PredictiveWordGenerator::new(model, 2, base);
+        predictor.set_context("");
+        manager.add_generator(Box::new(predictor));
+
+        let predictions = manager.get_predictions("");
+        assert_eq!(predictions.len(), 2);
+        assert!(predictions.contains(&"t".to_string()));
+        assert!(predictions.contains(&"w".to_string()));
+    }
+}

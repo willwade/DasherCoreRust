@@ -109,11 +109,11 @@ impl DasherModel {
 
     /// Create a new Dasher model with custom language model
     pub fn with_language_model(language_model: Box<dyn LanguageModel>) -> Self {
-        use crate::wordgen::BasicWordGenerator;
+    
         use crate::model::word_prediction::WordPredictionManager;
         use crate::action::{ActionManager, BackspaceAction, SpaceAction, AcceptAction};
         let mut word_prediction = WordPredictionManager::new(10, 32);
-        word_prediction.add_generator(Box::new(BasicWordGenerator));
+    
         let mut action_manager = ActionManager::new();
         action_manager.register_action(Box::new(BackspaceAction));
         action_manager.register_action(Box::new(SpaceAction));
