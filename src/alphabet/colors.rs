@@ -206,7 +206,7 @@ mod tests {
     fn test_color_contrast() {
         let white = Color::new(255, 255, 255);
         let black = Color::new(0, 0, 0);
-        let gray = Color::new(128, 128, 128);
+        let gray = Color::new(120, 120, 120);
 
         assert!(white.has_good_contrast_with(&black));
         assert!(!gray.has_good_contrast_with(&white));

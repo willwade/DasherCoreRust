@@ -32,6 +32,8 @@ pub struct CombinedLanguageModel {
     ppm_weight: f64,
     /// Current word buffer
     current_word: String,
+    /// Rolling context buffer for PPM
+    context_buffer: String,
     /// Word separator characters
     word_separators: HashSet<char>,
 }
@@ -53,6 +55,7 @@ impl CombinedLanguageModel {
             dictionary: Dictionary::new(),
             ppm_weight: 0.7,
             current_word: String::new(),
+            context_buffer: String::new(),
             word_separators,
         }
     }
@@ -123,12 +126,18 @@ impl LanguageModel for CombinedLanguageModel {
     }
 
     fn enter_symbol(&mut self, symbol: char) {
-        // Update PPM model
-        self.ppm.enter_symbol(symbol);
-
+        // Update PPM model with context buffer
+        self.ppm.enter_symbol(&self.context_buffer, symbol);
+        // Update context buffer
+        let max_order = self.ppm.max_order().value() as usize;
+        self.context_buffer.push(symbol);
+        if self.context_buffer.len() > max_order {
+            self.context_buffer.remove(0);
+        }
         // Update word buffer
         if self.word_separators.contains(&symbol) {
             self.current_word.clear();
+            self.context_buffer.clear(); // Reset context at word boundary
         } else {
             self.current_word.push(symbol);
         }
@@ -136,6 +145,7 @@ impl LanguageModel for CombinedLanguageModel {
 
     fn reset(&mut self) {
         self.current_word.clear();
+        self.context_buffer.clear();
     }
 }
 
