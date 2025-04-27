@@ -69,6 +69,30 @@ impl Action for AcceptAction {
     }
 }
 
+pub struct UndoAction;
+impl Action for UndoAction {
+    fn name(&self) -> &str { "undo" }
+    fn label(&self) -> &str { "↶" }
+    fn execute(&self, model: &mut crate::model::DasherModel) {
+        let text = model.output_text();
+        if !text.is_empty() {
+            let mut new_text = text.to_string();
+            if let Some(idx) = new_text.char_indices().rev().next().map(|(i, _)| i) {
+                new_text.truncate(idx);
+            } else {
+                new_text.clear();
+            }
+            model.set_output_text(&new_text);
+        }
+    }
+}
+
+impl ActionManager {
+    pub fn unregister_action(&mut self, name: &str) {
+        self.actions.remove(name);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

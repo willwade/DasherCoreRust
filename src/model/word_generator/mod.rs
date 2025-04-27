@@ -5,8 +5,10 @@ use crate::alphabet::AlphabetMap;
 use crate::alphabet::AlphabetInfo;
 
 mod predictive;
+mod user_dictionary;
 
 pub use predictive::PredictiveWordGenerator;
+pub use user_dictionary::UserDictionaryWordGenerator;
 
 /// Trait for word generators that can provide words based on various conditions.
 /// 
