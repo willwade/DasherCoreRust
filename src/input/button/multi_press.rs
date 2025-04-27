@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
+use crate::input::filter::DasherInputExt;
 use crate::view::DasherView;
-use crate::Result;
+
 
 /// Multi-press mode configuration
 #[derive(Debug, Clone)]
@@ -188,10 +189,10 @@ impl InputFilter for MultiPressMode {
 
         // Update coordinates
         let dt = Duration::from_millis(16); // ~60 FPS
-        self.update_coordinates(now, dt);
+        self.update_coordinates(dt);
 
         // Apply coordinates to model
-        model.apply_input_coordinates(self.current_coords);
+        model.apply_input_coordinates((self.current_coords.x as i64, self.current_coords.y as i64));
     }
 
     fn key_down(&mut self, _time: u64, _key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {}

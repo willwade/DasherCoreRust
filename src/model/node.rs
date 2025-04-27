@@ -8,13 +8,7 @@ use std::rc::{Rc, Weak};
 
 /// Node flags representing the state of the node
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NodeFlags {
-    NONE = 0,
-    SEEN = 1,
-    ALL_CHILDREN = 2,
-    COMMITTED = 4,
-    CONVERTED = 8,
-}
+pub struct NodeFlags(pub u32);
 
 impl NodeFlags {
     /// Default flags for a new node
@@ -40,7 +34,6 @@ impl NodeFlags {
 
     /// Node has been converted
     pub const CONVERTED: u32 = 0x0040;
-    pub const CONVERTED: u32 = 0x0010;
 
     /// Node is a control node
     pub const CONTROL: u32 = 0x0020;

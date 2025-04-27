@@ -96,7 +96,7 @@ pub fn create_default_manager<M: LanguageModel + 'static>(
     let mut manager = WordPredictionManager::new(max_predictions, 3);
 
     // Add predictive generator if we have a language model
-    let predictor = PredictiveWordGenerator::new(language_model, max_predictions);
+    let predictor = PredictiveWordGenerator::new(Box::new(language_model), max_predictions);
     manager.add_generator(Box::new(predictor));
 
     // Add file-based generator if we have a word list

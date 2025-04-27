@@ -23,7 +23,15 @@ impl AlphabetMap {
         map.build_maps();
         map
     }
+}
 
+impl Default for AlphabetMap {
+    fn default() -> Self {
+        Self::new(AlphabetInfo::default())
+    }
+}
+
+impl AlphabetMap {
     /// Build the character and string maps
     fn build_maps(&mut self) {
         for (i, character) in self.alphabet_info.characters.iter().enumerate() {

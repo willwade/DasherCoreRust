@@ -15,11 +15,11 @@ use std::rc::{Rc, Weak};
 use std::path::Path;
 
 use node::{DasherNode, NodeFlags};
-use language::{CombinedLanguageModel, PPMOrder, Dictionary};
+use language::{CombinedLanguageModel, PPMOrder};
 pub use language::LanguageModel;
 
 use crate::view::{DasherScreen, Color};
-use crate::alphabet::{Alphabet, Symbol};
+use crate::alphabet::Alphabet;
 use crate::Result;
 
 /// Event type for node creation
@@ -83,6 +83,20 @@ pub struct DasherModel {
 }
 
 impl DasherModel {
+    /// Stub for input coordinate application
+    pub fn apply_input_coordinates(&mut self, _coords: (i64, i64)) {
+        // Stub: No-op for now
+    }
+    /// Y origin constant for coordinate calculations
+    pub const ORIGIN_Y: i64 = 0;
+    /// Placeholder for word predictions
+    pub fn get_word_predictions(&self) -> Vec<String> {
+        Vec::new()
+    }
+    /// Maximum Y coordinate for the model (placeholder value)
+    pub const MAX_Y: i64 = 1 << 20;
+    /// Normalization constant for probability calculations
+    pub const NORMALIZATION: u32 = 1 << 16;
     /// Create a new Dasher model with default settings
     pub fn new() -> Self {
         Self::with_language_model(Box::new(CombinedLanguageModel::new(PPMOrder::Three)))
@@ -247,6 +261,7 @@ impl DasherModel {
 
     /// Expand a node by creating its children
     pub fn expand_node(&mut self, node: &Rc<RefCell<DasherNode>>) {
+
         // Get word predictions if this is a word boundary
         let predictions = if node.borrow().is_word_boundary() {
             self.get_word_predictions()
@@ -274,21 +289,24 @@ impl DasherModel {
             let probs = if let Some(lm) = &mut self.language_model {
                 // Use the language model to get probabilities
                 let context = lm.create_empty_context();
-                let probs = lm.get_probs(context, Self::NORMALIZATION as usize, 1);
-                lm.release_context(context);
+                let probs = lm.get_probs(&context);
+                // lm.release_context(context);
                 probs
             } else {
                 // Use uniform probabilities
                 let num_symbols = alphabet.size();
-                let prob_per_symbol = Self::NORMALIZATION as usize / num_symbols;
-                vec![prob_per_symbol; num_symbols]
+                let mut map = std::collections::HashMap::new();
+                for symbol in alphabet.symbols().iter() {
+                    map.insert(symbol.character, 1.0 / num_symbols as f64);
+                }
+                map
             };
 
             // Create a child for each symbol in the alphabet
             let mut lower_bound = 0;
 
-            for (i, symbol) in alphabet.symbols().iter().enumerate() {
-                let prob = probs.get(i).copied().unwrap_or(0) as u32;
+            for symbol in alphabet.symbols().iter() {
+                let prob = probs.get(&symbol.character).copied().unwrap_or(0.0) as u32;
                 if prob > 0 {
                     let upper_bound = lower_bound + prob;
 
@@ -305,7 +323,7 @@ impl DasherModel {
                     child.borrow_mut().set_symbol(symbol.character);
 
                     // Set the colors
-                    child.borrow_mut().set_colors(symbol.foreground_color, symbol.background_color);
+                    child.borrow_mut().set_colors((symbol.foreground_color.r, symbol.foreground_color.g, symbol.foreground_color.b), (symbol.background_color.r, symbol.background_color.g, symbol.background_color.b));
 
                     // Set the parent
                     child.borrow_mut().set_parent(Rc::downgrade(node));

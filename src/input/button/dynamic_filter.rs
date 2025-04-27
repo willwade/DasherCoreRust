@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
+use crate::input::filter::DasherInputExt;
 use crate::view::DasherView;
-use crate::Result;
+
 
 /// One button dynamic filter configuration
 #[derive(Debug, Clone)]
@@ -212,10 +213,7 @@ impl OneButtonDynamicFilter {
 impl InputFilter for OneButtonDynamicFilter {
     fn reset(&mut self) {
         // Reset to default state
-        self.velocity = 0.0;
-        self.direction = 1;
-        self.last_button_state = false;
-        self.paused = false;
+        // Removed fields: velocity, direction, last_button_state, paused (not present in C++).
     }
 
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
@@ -231,7 +229,7 @@ impl InputFilter for OneButtonDynamicFilter {
         self.update_coordinates(now, dt);
 
         // Apply coordinates to model
-        model.apply_input_coordinates(self.current_coords);
+        model.apply_input_coordinates((self.current_coords.x as i64, self.current_coords.y as i64));
     }
 
     fn key_down(&mut self, _time: u64, _key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {}

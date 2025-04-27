@@ -61,7 +61,8 @@ impl BaseWordGenerator {
         let mut symbols = Vec::new();
         for c in text.chars() {
             if let Some(symbol) = self.alphabet_map.char_to_index(c) {
-                symbols.push(symbol);
+                // Convert from usize to u32
+                symbols.push(symbol as u32);
             }
         }
         symbols

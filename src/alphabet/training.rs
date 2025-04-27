@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{self, BufRead, BufReader, Write};
 use std::collections::HashMap;
 use std::time::SystemTime;

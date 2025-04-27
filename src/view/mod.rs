@@ -3,8 +3,7 @@
 //! This module contains the implementation of the Dasher view, which is
 //! responsible for rendering the Dasher interface.
 
-use std::cell::RefCell;
-use std::rc::Rc;
+
 
 use crate::input::DasherInput;
 use crate::model::DasherModel;

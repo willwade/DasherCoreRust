@@ -2,15 +2,13 @@ mod ppm;
 mod dictionary;
 
 pub use ppm::{PPMLanguageModel, PPMOrder};
-pub use dictionary::{Dictionary, DictionaryEntry};
-
-use std::path::Path;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+pub use dictionary::Dictionary;
 use std::collections::{HashMap, HashSet};
 
 /// Language model trait
 pub trait LanguageModel {
+    /// Create an empty context (stub)
+    fn create_empty_context(&mut self) -> String { String::new() }
     /// Get probability distribution for next symbol
     fn get_probs(&self, context: &str) -> HashMap<char, f64>;
 
@@ -19,6 +17,9 @@ pub trait LanguageModel {
 
     /// Reset model state
     fn reset(&mut self);
+
+    /// For downcasting
+    fn as_any(&mut self) -> &mut dyn std::any::Any;
 }
 
 /// Combined language model using PPM and dictionary
@@ -88,6 +89,10 @@ impl CombinedLanguageModel {
 }
 
 impl LanguageModel for CombinedLanguageModel {
+    fn as_any(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn get_probs(&self, context: &str) -> HashMap<char, f64> {
         // Get PPM probabilities
         let mut probs = self.ppm.get_probs(context);

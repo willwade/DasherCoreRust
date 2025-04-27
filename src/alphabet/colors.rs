@@ -10,12 +10,19 @@ pub struct Color {
     pub g: u8,
     /// Blue component (0-255)
     pub b: u8,
+    /// Alpha component (0-255)
+    pub a: u8,
 }
 
 impl Color {
     /// Create a new color from RGB components
     pub fn new(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b }
+        Self { r, g, b, a: 255 }
+    }
+    
+    /// Convert color to hex string (e.g., "#FF0000")
+    pub fn to_hex(&self) -> String {
+        format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
     }
 
     /// Create a color from a hex string (e.g., "#FF0000" or "FF0000")
@@ -32,10 +39,7 @@ impl Color {
         Some(Self::new(r, g, b))
     }
 
-    /// Convert the color to a hex string
-    pub fn to_hex(&self) -> String {
-        format!("#{:02X}{:02X}{:02X}", self.r, self.g, self.b)
-    }
+
 
     /// Get the luminance of the color (perceived brightness)
     pub fn luminance(&self) -> f32 {

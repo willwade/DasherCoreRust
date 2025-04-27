@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use crate::model::{DasherModel, node::DasherNode};
 use crate::view::{DasherScreen, DasherView, DasherViewSquare, Orientation};
-use crate::input::{DasherInput, InputFilter, DefaultFilter, InputManager, VirtualKey};
+use crate::input::{DasherInput, InputFilter, InputManager, VirtualKey};
 use crate::settings::{Settings, Parameter};
 use crate::Result;
 

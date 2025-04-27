@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 /// PPM node for trie structure
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PPMNode {
     /// Symbol stored in this node
     symbol: Option<char>,
@@ -34,9 +34,10 @@ impl PPMNode {
         if let Some(child) = self.children.get(&symbol) {
             child.clone()
         } else {
+            // To avoid infinite recursion, parent should be a Weak ref or None here.
             let child = Rc::new(RefCell::new(PPMNode::new(
                 Some(symbol),
-                Some(Rc::new(RefCell::new(self.clone()))),
+                None,
             )));
             self.children.insert(symbol, child.clone());
             child

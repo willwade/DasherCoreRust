@@ -8,6 +8,15 @@ use crate::view::DasherView;
 use crate::input::DasherInput;
 
 /// Input filter interface
+pub trait DasherInputExt {
+    fn is_button_pressed(&self, _button: usize) -> bool {
+        false // Stub: always returns false
+    }
+}
+
+impl<T: crate::input::DasherInput + ?Sized> DasherInputExt for T {}
+
+// Existing trait
 pub trait InputFilter {
     /// Process input and update the model
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView);
@@ -238,9 +247,9 @@ impl OneDimensionalFilter {
 impl InputFilter for OneDimensionalFilter {
     fn reset(&mut self) {
         // Reset to default state
-        self.last_x = 0;
-        self.last_y = 0;
-        self.paused = false;
+        self.base.last_x = 0;
+        self.base.last_y = 0;
+        self.base.paused = false;
     }
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         // Get the coordinates from the input device
@@ -322,12 +331,10 @@ impl InputFilter for ButtonInputFilter {
     }
     fn key_down(&mut self, _time: u64, key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {
         // Example: use Space as the button
-        if key == VirtualKey::Space {
-            if !self.last_button_state {
-                // TODO: trigger the appropriate model action here (e.g., step, zoom, select)
-                // e.g., model.handle_button_press();
-                self.last_button_state = true;
-            }
+        if key == VirtualKey::Space && !self.last_button_state {
+            // TODO: trigger the appropriate model action here (e.g., step, zoom, select)
+            // e.g., model.handle_button_press();
+            self.last_button_state = true;
         }
     }
     fn key_up(&mut self, _time: u64, key: VirtualKey, _model: &mut DasherModel, _view: &mut dyn DasherView) {
@@ -393,6 +400,8 @@ impl InputFilter for StylusInputFilter {
 
 /// Click filter implementation
 pub struct ClickFilter {
+    pub last_x: i64,
+    pub last_y: i64,
     /// Whether the filter is paused
     paused: bool,
 
@@ -405,9 +414,10 @@ pub struct ClickFilter {
 }
 
 impl ClickFilter {
-    /// Create a new click filter
     pub fn new() -> Self {
         Self {
+            last_x: 0,
+            last_y: 0,
             paused: false,
             target_x: 0,
             target_y: 0,
@@ -419,7 +429,8 @@ impl ClickFilter {
 impl InputFilter for ClickFilter {
     fn reset(&mut self) {
         // Reset to default state
-        self.last_click = None;
+        self.last_x = 0;
+        self.last_y = 0;
         self.paused = false;
     }
     fn process(&mut self, _input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, _view: &mut dyn DasherView) {

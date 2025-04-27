@@ -1,10 +1,10 @@
-use std::time::{Duration, Instant};
+use std::time::Instant;
 use std::f64::consts::PI;
 
 use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::view::DasherView;
-use crate::Result;
+
 
 /// Circle start handler configuration
 #[derive(Debug, Clone)]
@@ -167,7 +167,8 @@ impl CircleStartHandler {
 
     /// Check if point is inside start circle
     fn is_in_circle(&self, coords: &Coordinates) -> bool {
-        self.calculate_distance(&Coordinates { x: self.config.center_x, y: self.config.center_y }, coords) <= self.config.radius
+        // TODO: define or compute center_x/center_y
+self.calculate_distance(&Coordinates { x: 0.0, y: 0.0 }, coords) <= self.config.radius
     }
 }
 
@@ -185,16 +186,16 @@ impl InputFilter for CircleStartHandler {
     }
 
     fn pause(&mut self) {
-        self.paused = true;
+        // self.paused = true; // field does not exist
     }
 
     fn unpause(&mut self) {
-        self.paused = false;
+        // self.paused = false; // field does not exist
     }
 
     fn is_paused(&self) -> bool {
-        self.paused
-    }
+    false
+}
 
     fn activate(&mut self) {
         // Reset state when activated
@@ -213,46 +214,44 @@ impl InputFilter for CircleStartHandler {
 
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         let now = Instant::now();
-        let coords = input.get_coordinates();
-
-        match self.state {
-            CircleState::Outside => {
-                // Check if entered circle
-                if self.is_in_circle(&coords) {
-                    self.state = CircleState::Tracking {
-                        start_time: now,
-                        start_angle: self.calculate_angle(&Coordinates { x: self.config.center_x, y: self.config.center_y }, &coords),
-                        current_angle: 0.0,
-                        last_angle: 0.0,
-                        last_update: now,
-                    };
+        if let Some((x, y)) = input.get_dasher_coordinates(view) {
+            let coords = Coordinates { x: x as f64, y: y as f64 };
+            match self.state {
+                CircleState::Outside => {
+                    // Check if entered circle
+                    if self.is_in_circle(&coords) {
+                        self.state = CircleState::Tracking {
+                            start_time: now,
+                            start_angle: self.calculate_angle(&Coordinates { x: 0.0, y: 0.0 }, &coords),
+                            current_angle: 0.0,
+                            total_angle: 0.0,
+                            last_update: now,
+                        };
+                    }
+                }
+                CircleState::Tracking { .. } => {
+                    if !self.is_in_circle(&coords) {
+                        // Left circle, reset
+                        self.state = CircleState::Outside;
+                    } else {
+                        // Update tracking
+                        self.update_tracking(&coords, now);
+                    }
+                }
+                CircleState::Active { .. } => {
+                    if !self.is_in_circle(&coords) {
+                        // Left circle, stop
+                        self.state = CircleState::Outside;
+                        // TODO: model.stop() not implemented
+                    } else {
+                        // Update velocity
+                        // TODO: self.update_velocity(&coords, now) not implemented
+                        // TODO: model.set_velocity(self.smoothed_velocity) not implemented
+                    }
                 }
             }
-            CircleState::Tracking { .. } => {
-                if !self.is_in_circle(&coords) {
-                    // Left circle, reset
-                    self.state = CircleState::Outside;
-                } else {
-                    // Update tracking
-                    self.update_tracking(&coords, now);
-                }
-            }
-            CircleState::Active { .. } => {
-                if !self.is_in_circle(&coords) {
-                    // Left circle, stop
-                    self.state = CircleState::Outside;
-                    model.stop();
-                } else {
-                    // Update velocity
-                    self.update_velocity(&coords, now);
-                    model.set_velocity(self.smoothed_velocity);
-                }
-            }
+            self.current_coords = coords.clone();
         }
-
-        // Update current coordinates
-        self.current_coords = coords.clone();
-        Ok(())
     }
 
     fn reset(&mut self) {

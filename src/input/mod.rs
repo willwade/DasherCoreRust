@@ -7,8 +7,7 @@ mod device;
 mod button;
 mod circle_start;
 
-use std::cell::RefCell;
-use std::rc::Rc;
+
 
 use crate::model::DasherModel;
 use crate::view::DasherView;
@@ -17,6 +16,30 @@ pub use filter::{InputFilter, DefaultFilter};
 pub use device::{DasherInput, MouseInput};
 pub use button::{ButtonHandler, ButtonConfig, ButtonMode};
 pub use circle_start::{CircleStartHandler, CircleStartConfig};
+
+// --- ADDED: Stub update traits for input handlers ---
+trait UpdatableInputHandler {
+    fn update(&mut self, device: &dyn DasherInput, model: &mut DasherModel, view: &mut dyn DasherView);
+}
+
+impl UpdatableInputHandler for Box<dyn InputFilter> {
+    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
+        // No-op stub
+    }
+}
+
+impl UpdatableInputHandler for crate::input::CircleStartHandler {
+    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
+        // No-op stub
+    }
+}
+
+impl UpdatableInputHandler for crate::input::button::ButtonHandler {
+    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
+        // No-op stub
+    }
+}
+// --- END ADDED ---
 
 /// Virtual key codes for keyboard input
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

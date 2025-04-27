@@ -1,4 +1,4 @@
-use std::rc::Rc;
+
 use super::WordGenerator;
 use crate::model::language::LanguageModel;
 

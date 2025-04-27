@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use crate::alphabet::group::GroupInfo;
 
 /// Screen orientation for the alphabet
@@ -104,7 +104,15 @@ impl AlphabetInfo {
             character_undo_actions: Vec::new(),
         }
     }
+}
 
+impl Default for AlphabetInfo {
+    fn default() -> Self {
+        Self::new(String::from("default"))
+    }
+}
+
+impl AlphabetInfo {
     /// Get the display text for a symbol
     pub fn get_display_text(&self, symbol: usize) -> Option<&str> {
         self.characters.get(symbol - 1).map(|c| c.display.as_str())

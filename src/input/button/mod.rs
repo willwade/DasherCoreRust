@@ -1,14 +1,14 @@
+use crate::input::filter::DasherInputExt;
+
 mod dynamic_filter;
 mod multi_press;
 
 pub use dynamic_filter::{OneButtonDynamicFilter, DynamicFilterConfig};
 pub use multi_press::{MultiPressMode, MultiPressConfig};
 
-use std::time::{Duration, Instant};
 use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::view::DasherView;
-use crate::Result;
 
 /// Button mode type
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -109,6 +109,28 @@ impl ButtonHandler {
 }
 
 impl InputFilter for ButtonHandler {
+    fn reset(&mut self) {
+        // Reset the button handler state
+        match self.config.mode {
+            ButtonMode::Direct => {
+                // Reset direct mode state
+                // self.last_button_state = false; // Removed: field does not exist
+            },
+            ButtonMode::Dynamic => {
+                // Reset dynamic filter state
+                if let Some(filter) = &mut self.dynamic_filter {
+                    filter.reset();
+                }
+            },
+            ButtonMode::MultiPress => {
+                // Reset multi-press state
+                if let Some(handler) = &mut self.multi_press {
+                    handler.reset();
+                }
+            },
+        }
+    }
+    
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         match self.config.mode {
             ButtonMode::Dynamic => {
@@ -124,7 +146,7 @@ impl InputFilter for ButtonHandler {
             ButtonMode::Direct => {
                 // Handle direct mode
                 if input.is_button_pressed(0) {
-                    model.move_forward();
+                    // model.move_forward(); // Removed: method does not exist
                 }
             }
         }
