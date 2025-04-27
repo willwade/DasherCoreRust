@@ -289,7 +289,7 @@ impl DasherModel {
         }
 
         // Get word predictions if this is a word boundary
-        let predictions = if node.borrow().is_word_boundary() {
+        let _predictions = if node.borrow().is_word_boundary() {
             self.get_word_predictions()
         } else {
             Vec::new()

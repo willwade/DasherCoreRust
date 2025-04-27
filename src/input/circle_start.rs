@@ -1,7 +1,7 @@
 use std::time::Instant;
 use std::f64::consts::PI;
 
-use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
+use crate::{DasherInput, input::{InputFilter, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::view::DasherView;
 
@@ -212,7 +212,7 @@ impl InputFilter for CircleStartHandler {
         false
     }
 
-    fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, _model: &mut DasherModel, view: &mut dyn DasherView) {
         let now = Instant::now();
         if let Some((x, y)) = input.get_dasher_coordinates(view) {
             let coords = Coordinates { x: x as f64, y: y as f64 };
@@ -264,7 +264,7 @@ impl InputFilter for CircleStartHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
+
 
     #[test]
     fn test_circle_start_basic() {

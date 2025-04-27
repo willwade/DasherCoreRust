@@ -173,12 +173,12 @@ scheme.add_color(bg.r, bg.g, bg.b, bg.a);
                     }
                 }
                 Event::End(e) => {
-                    let name = e.name().as_ref();
+                    let _name = e.name().as_ref();
                     match e.name() {
                         name if name == quick_xml::name::QName(b"group") => {
-                            if let (Some(group), Some(alphabet)) = (current_group.take(), alphabet.as_mut()) {
+                            if let (Some(_group), Some(_alphabet)) = (current_group.take(), alphabet.as_mut()) {
                                 // Flatten all descendants that are Character, not GroupInfo
-for child in group.children.iter() {
+for _child in _group.children.iter() {
     // If GroupInfo has a method to extract Characters, use it. Otherwise, skip.
     // This is a placeholder for correct logic:
     // alphabet.characters.extend(child.extract_characters());
@@ -188,7 +188,7 @@ for child in group.children.iter() {
                             }
                         }
                         name if name.as_ref() == b"character" => {
-                            if let (Some(character), Some(group)) = (current_character.take(), current_group.as_mut()) {
+                            if let (Some(_character), Some(_group)) = (current_character.take(), current_group.as_mut()) {
                                 // group.children.push(character); // This is invalid if group.children is Vec<GroupInfo>
                             }
                         }

@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
+use crate::{DasherInput, input::{InputFilter, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::input::filter::DasherInputExt;
 use crate::view::DasherView;
@@ -216,7 +216,7 @@ impl InputFilter for OneButtonDynamicFilter {
         // Removed fields: velocity, direction, last_button_state, paused (not present in C++).
     }
 
-    fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, _view: &mut dyn DasherView) {
         let now = Instant::now();
 
         // Handle button press
@@ -272,6 +272,7 @@ impl InputFilter for OneButtonDynamicFilter {
 mod tests {
     use super::*;
     use std::thread;
+
 
     #[test]
     fn test_dynamic_filter_basic() {

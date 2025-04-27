@@ -1,5 +1,5 @@
 use std::time::{Duration, Instant};
-use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
+use crate::{DasherInput, input::{InputFilter, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::input::filter::DasherInputExt;
 use crate::view::DasherView;
@@ -177,7 +177,7 @@ impl MultiPressMode {
 }
 
 impl InputFilter for MultiPressMode {
-    fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, _view: &mut dyn DasherView) {
         let now = Instant::now();
 
         // Handle button state

@@ -6,7 +6,7 @@ mod multi_press;
 pub use dynamic_filter::{OneButtonDynamicFilter, DynamicFilterConfig};
 pub use multi_press::{MultiPressMode, MultiPressConfig};
 
-use crate::{DasherInput, input::{InputFilter, InputDevice, Coordinates, VirtualKey}};
+use crate::{DasherInput, input::{InputFilter, Coordinates, VirtualKey}};
 use crate::model::DasherModel;
 use crate::view::DasherView;
 

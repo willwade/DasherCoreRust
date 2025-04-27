@@ -287,7 +287,8 @@ impl DasherNode {
     }
 
     /// Perform an action when this node is entered
-    pub fn do_action(&mut self) {
+    #[allow(dead_code)]
+pub fn do_action(&mut self) {
         // If this node has a symbol, it should be added to the output
         if let Some(_symbol) = self.symbol {
             // The actual appending to output text is handled by the model

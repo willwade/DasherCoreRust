@@ -194,7 +194,7 @@ impl InputManager {
     }
     
     /// Process input for a frame
-    pub fn process_frame(&mut self, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
+    pub fn process_frame(&mut self, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         if self.paused {
             return;
         }

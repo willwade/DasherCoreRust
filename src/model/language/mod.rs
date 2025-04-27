@@ -61,16 +61,19 @@ impl CombinedLanguageModel {
     }
 
     /// Set PPM weight
+    #[allow(dead_code)]
     pub fn set_ppm_weight(&mut self, weight: f64) {
         self.ppm_weight = weight.clamp(0.0, 1.0);
     }
 
     /// Add word separator
+    #[allow(dead_code)]
     pub fn add_word_separator(&mut self, separator: char) {
         self.word_separators.insert(separator);
     }
 
     /// Get dictionary reference
+    #[allow(dead_code)]
     pub fn dictionary(&self) -> &Dictionary {
         &self.dictionary
     }
@@ -81,11 +84,13 @@ impl CombinedLanguageModel {
     }
 
     /// Get PPM model reference
+    #[allow(dead_code)]
     pub fn ppm(&self) -> &PPMLanguageModel {
         &self.ppm
     }
 
     /// Get PPM model mutable reference
+    #[allow(dead_code)]
     pub fn ppm_mut(&mut self) -> &mut PPMLanguageModel {
         &mut self.ppm
     }

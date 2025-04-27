@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::wordgen::WordGenerator;
+
 use crate::model::language::LanguageModel;
 
 /// Manages word prediction and generation for the Dasher model
@@ -82,10 +83,10 @@ impl WordPredictionManager {
 
 /// Create a word prediction manager with common configurations
 pub fn create_default_manager<M: LanguageModel + 'static>(
-    language_model: M,
+    _language_model: M,
     max_predictions: usize,
 ) -> WordPredictionManager {
-    let mut manager = WordPredictionManager::new(max_predictions, 3);
+    let manager = WordPredictionManager::new(max_predictions, 3);
 
     manager
 }

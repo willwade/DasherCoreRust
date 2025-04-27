@@ -30,6 +30,7 @@ impl PPMNode {
     }
 
     /// Get child node for symbol, creating if it doesn't exist
+    #[allow(dead_code)]
     fn get_or_create_child(&mut self, symbol: char) -> Rc<RefCell<PPMNode>> {
         if let Some(child) = self.children.get(&symbol) {
             child.clone()
@@ -45,6 +46,7 @@ impl PPMNode {
     }
 
     /// Update counts for this node
+    #[allow(dead_code)]
     fn update_counts(&mut self, increment: bool) {
         if increment {
             self.count += 1;
@@ -62,16 +64,21 @@ pub enum PPMOrder {
     /// No context (order -1)
     None,
     /// Order 0 (single symbol)
+    #[allow(dead_code)]
     Zero,
     /// Order 1 (pairs)
+    #[allow(dead_code)]
     One,
     /// Order 2 (triples)
+    #[allow(dead_code)]
     Two,
     /// Order 3 (quadruples)
     Three,
     /// Order 4 (quintuples)
+    #[allow(dead_code)]
     Four,
     /// Order 5 (sextuples)
+    #[allow(dead_code)]
     Five,
 }
 
@@ -98,8 +105,10 @@ pub struct PPMLanguageModel {
     /// Maximum order of model
     max_order: PPMOrder,
     /// Exclusion flag
+    #[allow(dead_code)]
     exclusion: bool,
     /// Update exclusion flag
+    #[allow(dead_code)]
     update_exclusion: bool,
 }
 
@@ -115,6 +124,7 @@ impl PPMLanguageModel {
     }
 
     /// Set exclusion flags
+    #[allow(dead_code)]
     pub fn set_exclusion(&mut self, exclusion: bool, update_exclusion: bool) {
         self.exclusion = exclusion;
         self.update_exclusion = update_exclusion;
@@ -150,7 +160,7 @@ impl PPMLanguageModel {
     pub fn get_probs(&self, context: &str) -> HashMap<char, f64> {
         let mut probs = HashMap::new();
         let mut seen = HashMap::new();
-        let mut alpha = 1.0; // Start with all probability mass
+        let alpha = 1.0; // Start with all probability mass
         let mut context_orders: Vec<&str> = Vec::new();
         // Build context slices for each order (from max down to 0), using the LAST N symbols (matching enter_symbol)
         for order in (PPMOrder::None.value()..=self.max_order.value()).rev() {
@@ -169,7 +179,7 @@ impl PPMLanguageModel {
         context_orders.reverse();
 
         let mut found_any_context = false;
-        for (order, context_slice) in context_orders.iter().enumerate().rev() {
+        for (_order, context_slice) in context_orders.iter().enumerate().rev() {
             let mut node = self.root.clone();
             let mut found = true;
             // println!("[PPM][predict] order: {}, context_slice: '{}'", order, context_slice);
@@ -321,7 +331,7 @@ mod tests {
             }
         }
         if found {
-            let children: Vec<char> = node.borrow().children.keys().cloned().collect();
+            let _children: Vec<char> = node.borrow().children.keys().cloned().collect();
             // println!("[PPM][test] children after context 'a': {:?}", children);
         } else {
             // println!("[PPM][test] context 'a' not found in trie");
