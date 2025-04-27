@@ -6,8 +6,9 @@
 pub mod node;
 mod language;
 pub mod word_generator;
-mod word_prediction;
-
+pub mod word_prediction;
+pub use word_generator::{BaseWordGenerator, PredictiveWordGenerator};
+pub use language::{PPMLanguageModel, PPMOrder, PPMNode, LanguageModel, CombinedLanguageModel};
 pub use word_prediction::{WordPredictionManager, create_default_manager};
 use std::cell::RefCell;
 use std::collections::VecDeque;
@@ -15,9 +16,6 @@ use std::rc::{Rc, Weak};
 use std::path::Path;
 
 use node::{DasherNode, NodeFlags};
-use language::{CombinedLanguageModel, PPMOrder};
-pub use language::LanguageModel;
-
 use crate::view::{DasherScreen, Color};
 use crate::alphabet::Alphabet;
 use crate::Result;

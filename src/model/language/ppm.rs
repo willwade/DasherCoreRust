@@ -10,7 +10,7 @@ pub struct PPMNode {
     /// Count of times this sequence has been seen
     count: usize,
     /// Child nodes
-    children: HashMap<char, Rc<RefCell<PPMNode>>>,
+    pub children: HashMap<char, Rc<RefCell<PPMNode>>>, 
     /// Parent node
     parent: Option<Rc<RefCell<PPMNode>>>,
     /// Total count of all children

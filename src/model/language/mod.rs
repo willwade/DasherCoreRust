@@ -1,7 +1,7 @@
 mod ppm;
 mod dictionary;
 
-pub use ppm::{PPMLanguageModel, PPMOrder};
+pub use ppm::{PPMLanguageModel, PPMOrder, PPMNode};
 pub use dictionary::Dictionary;
 use std::collections::{HashMap, HashSet};
 
