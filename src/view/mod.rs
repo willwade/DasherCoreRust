@@ -3,9 +3,15 @@
 //! This module contains the implementation of the Dasher view, which is
 //! responsible for rendering the Dasher interface.
 
+mod square;
+#[cfg(test)]
+mod square_tests;
 
+pub use square::DasherViewSquare;
+pub use square::NodeShape;
+pub use square::SquareViewConfig;
 
-use crate::input::DasherInput;
+use crate::DasherInput;
 use crate::model::DasherModel;
 use crate::Result;
 
@@ -95,6 +101,27 @@ pub trait DasherScreen {
     /// Draw a line on the screen
     fn draw_line(&mut self, x1: i32, y1: i32, x2: i32, y2: i32, color: Color, line_width: i32);
 
+    /// Draw a polygon on the screen
+    fn draw_polygon(&mut self, points: &[(i32, i32)], _fill_color: Color, outline_color: Color, line_width: i32) {
+        // Default implementation draws a polygon as a series of lines
+        // This can be overridden by platform-specific implementations for better performance
+
+        if points.len() < 3 {
+            return;
+        }
+
+        // Draw the outline
+        for i in 0..points.len() {
+            let (x1, y1) = points[i];
+            let (x2, y2) = points[(i + 1) % points.len()];
+            self.draw_line(x1, y1, x2, y2, outline_color, line_width);
+        }
+
+        // Note: This default implementation doesn't fill the polygon
+        // Platform-specific implementations should override this method
+        // to provide proper polygon filling
+    }
+
     /// Signal that a frame is finished - the screen should be updated
     fn display(&mut self);
 
@@ -146,8 +173,16 @@ pub trait DasherView {
     /// Render the model
     fn render(&mut self, model: &mut DasherModel) -> Result<()>;
 
+    /// Render a node and its children
+    fn render_node(&mut self, node: std::rc::Rc<std::cell::RefCell<crate::model::node::DasherNode>>);
+
     /// Get the input device
     fn get_input_device(&self) -> Option<&dyn DasherInput>;
+
+    /// Get the input device (mutable)
+    fn get_input_device_mut(&mut self) -> Option<&mut dyn DasherInput> {
+        None
+    }
 
     /// Set the input device
     fn set_input_device(&mut self, input: Box<dyn DasherInput>);
@@ -159,158 +194,3 @@ pub trait DasherView {
     fn set_orientation(&mut self, orientation: Orientation);
 }
 
-/// Square Dasher view implementation
-pub struct DasherViewSquare {
-    /// Screen for rendering
-    screen: Box<dyn DasherScreen>,
-
-    /// Orientation of the view
-    orientation: Orientation,
-
-    /// Input device
-    input_device: Option<Box<dyn DasherInput>>,
-}
-
-impl DasherViewSquare {
-    /// Create a new square Dasher view
-    pub fn new(screen: Box<dyn DasherScreen>) -> Self {
-        Self {
-            screen,
-            orientation: Orientation::LeftToRight,
-            input_device: None,
-        }
-    }
-}
-
-impl DasherView for DasherViewSquare {
-    fn get_dimensions(&self) -> (i32, i32) {
-        (self.screen.get_width(), self.screen.get_height())
-    }
-
-    fn get_visible_region(&self) -> (i64, i64, i64, i64) {
-        // Return the visible region in Dasher coordinates
-        // (min_x, min_y, max_x, max_y)
-        match self.orientation {
-            Orientation::LeftToRight | Orientation::RightToLeft => {
-                (0, 0, DasherModel::MAX_Y, DasherModel::MAX_Y)
-            }
-            Orientation::TopToBottom | Orientation::BottomToTop => {
-                (0, 0, DasherModel::MAX_Y, DasherModel::MAX_Y)
-            }
-        }
-    }
-
-    fn screen_to_dasher(&self, x: i32, y: i32) -> (i64, i64) {
-        let (width, height) = self.get_dimensions();
-
-        match self.orientation {
-            Orientation::LeftToRight => {
-                let dasher_x = (x as f64 / width as f64 * DasherModel::MAX_Y as f64) as i64;
-                let dasher_y = (y as f64 / height as f64 * DasherModel::MAX_Y as f64) as i64;
-                (dasher_x, dasher_y)
-            }
-            Orientation::RightToLeft => {
-                let dasher_x = ((width - x) as f64 / width as f64 * DasherModel::MAX_Y as f64) as i64;
-                let dasher_y = (y as f64 / height as f64 * DasherModel::MAX_Y as f64) as i64;
-                (dasher_x, dasher_y)
-            }
-            Orientation::TopToBottom => {
-                let dasher_x = (y as f64 / height as f64 * DasherModel::MAX_Y as f64) as i64;
-                let dasher_y = (x as f64 / width as f64 * DasherModel::MAX_Y as f64) as i64;
-                (dasher_x, dasher_y)
-            }
-            Orientation::BottomToTop => {
-                let dasher_x = ((height - y) as f64 / height as f64 * DasherModel::MAX_Y as f64) as i64;
-                let dasher_y = (x as f64 / width as f64 * DasherModel::MAX_Y as f64) as i64;
-                (dasher_x, dasher_y)
-            }
-        }
-    }
-
-    fn dasher_to_screen(&self, x: i64, y: i64) -> (i32, i32) {
-        let (width, height) = self.get_dimensions();
-
-        match self.orientation {
-            Orientation::LeftToRight => {
-                let screen_x = (x as f64 / DasherModel::MAX_Y as f64 * width as f64) as i32;
-                let screen_y = (y as f64 / DasherModel::MAX_Y as f64 * height as f64) as i32;
-                (screen_x, screen_y)
-            }
-            Orientation::RightToLeft => {
-                let screen_x = width - (x as f64 / DasherModel::MAX_Y as f64 * width as f64) as i32;
-                let screen_y = (y as f64 / DasherModel::MAX_Y as f64 * height as f64) as i32;
-                (screen_x, screen_y)
-            }
-            Orientation::TopToBottom => {
-                let screen_x = (y as f64 / DasherModel::MAX_Y as f64 * width as f64) as i32;
-                let screen_y = (x as f64 / DasherModel::MAX_Y as f64 * height as f64) as i32;
-                (screen_x, screen_y)
-            }
-            Orientation::BottomToTop => {
-                let screen_x = (y as f64 / DasherModel::MAX_Y as f64 * width as f64) as i32;
-                let screen_y = height - (x as f64 / DasherModel::MAX_Y as f64 * height as f64) as i32;
-                (screen_x, screen_y)
-            }
-        }
-    }
-
-    fn draw_line(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, color: (u8, u8, u8, u8), line_width: i32) {
-        let (sx1, sy1) = self.dasher_to_screen(x1, y1);
-        let (sx2, sy2) = self.dasher_to_screen(x2, y2);
-
-        self.screen.draw_line(sx1, sy1, sx2, sy2, Color::from_tuple(color), line_width);
-    }
-
-    fn draw_rectangle(&mut self, x1: i64, y1: i64, x2: i64, y2: i64,
-                     fill_color: (u8, u8, u8, u8), outline_color: (u8, u8, u8, u8), line_width: i32) {
-        let (sx1, sy1) = self.dasher_to_screen(x1, y1);
-        let (sx2, sy2) = self.dasher_to_screen(x2, y2);
-
-        self.screen.draw_rectangle(sx1, sy1, sx2, sy2,
-                                  Color::from_tuple(fill_color),
-                                  Color::from_tuple(outline_color),
-                                  line_width);
-    }
-
-    fn draw_circle(&mut self, cx: i64, cy: i64, r: i64,
-                  fill_color: (u8, u8, u8, u8), line_color: (u8, u8, u8, u8), line_width: i32) {
-        let (sx, sy) = self.dasher_to_screen(cx, cy);
-
-        // Convert radius from Dasher to screen coordinates
-        let (width, height) = self.get_dimensions();
-        let sr = match self.orientation {
-            Orientation::LeftToRight | Orientation::RightToLeft => {
-                (r as f64 / DasherModel::MAX_Y as f64 * width as f64) as i32
-            }
-            Orientation::TopToBottom | Orientation::BottomToTop => {
-                (r as f64 / DasherModel::MAX_Y as f64 * height as f64) as i32
-            }
-        };
-
-        self.screen.draw_circle(sx, sy, sr,
-                               Color::from_tuple(fill_color),
-                               Color::from_tuple(line_color),
-                               line_width);
-    }
-
-    fn render(&mut self, model: &mut DasherModel) -> Result<()> {
-        // Render the model
-        model.render_to_view(&mut *self.screen)
-    }
-
-    fn get_input_device(&self) -> Option<&dyn DasherInput> {
-        self.input_device.as_deref()
-    }
-
-    fn set_input_device(&mut self, input: Box<dyn DasherInput>) {
-        self.input_device = Some(input);
-    }
-
-    fn get_orientation(&self) -> Orientation {
-        self.orientation
-    }
-
-    fn set_orientation(&mut self, orientation: Orientation) {
-        self.orientation = orientation;
-    }
-}

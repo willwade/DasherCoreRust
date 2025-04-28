@@ -170,8 +170,34 @@ impl CircleStartHandler {
 
     /// Check if point is inside start circle
     fn is_in_circle(&self, coords: &Coordinates) -> bool {
-        // TODO: define or compute center_x/center_y
-self.calculate_distance(&Coordinates { x: 0.0, y: 0.0 }, coords) <= self.config.radius
+        self.calculate_distance(&self.center, coords) <= self.config.radius
+    }
+
+    /// Update velocity based on current coordinates
+    fn update_velocity(&mut self, coords: &Coordinates, _now: Instant) {
+        // Calculate angle from center to current coordinates
+        let current_angle = self.calculate_angle(&self.center, coords);
+
+        // Calculate distance from center
+        let distance = self.calculate_distance(&self.center, coords);
+
+        // Normalize distance to radius (0.0 to 1.0)
+        let normalized_distance = (distance / self.config.radius).min(1.0);
+
+        // Calculate raw velocity based on distance from center
+        // Further from center = faster
+        let mut raw_velocity = normalized_distance * self.config.speed_multiplier;
+
+        // Determine direction based on angle
+        // If cursor is to the left of center (angle between PI/2 and 3PI/2),
+        // set negative velocity to go backward
+        if current_angle > PI/2.0 && current_angle < 3.0*PI/2.0 {
+            raw_velocity = -raw_velocity;
+        }
+
+        // Apply smoothing to velocity
+        self.smoothed_velocity = self.smoothed_velocity * self.config.angle_smoothing +
+                                raw_velocity * (1.0 - self.config.angle_smoothing);
     }
 }
 
@@ -215,7 +241,7 @@ impl InputFilter for CircleStartHandler {
         false
     }
 
-    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, _model: &mut DasherModel, view: &mut dyn DasherView) {
+    fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         let now = Instant::now();
         if let Some((x, y)) = input.get_dasher_coordinates(view) {
             let coords = Coordinates { x: x as f64, y: y as f64 };
@@ -225,7 +251,7 @@ impl InputFilter for CircleStartHandler {
                     if self.is_in_circle(&coords) {
                         self.state = CircleState::Tracking {
                             start_time: now,
-                            start_angle: self.calculate_angle(&Coordinates { x: 0.0, y: 0.0 }, &coords),
+                            start_angle: self.calculate_angle(&self.center, &coords),
                             current_angle: 0.0,
                             total_angle: 0.0,
                             last_update: now,
@@ -245,11 +271,11 @@ impl InputFilter for CircleStartHandler {
                     if !self.is_in_circle(&coords) {
                         // Left circle, stop
                         self.state = CircleState::Outside;
-                        // TODO: model.stop() not implemented
+                        model.stop();
                     } else {
                         // Update velocity
-                        // TODO: self.update_velocity(&coords, now) not implemented
-                        // TODO: model.set_velocity(self.smoothed_velocity) not implemented
+                        self.update_velocity(&coords, now);
+                        model.set_velocity(self.smoothed_velocity);
                     }
                 }
             }
@@ -295,5 +321,78 @@ mod tests {
 
         assert_eq!(handler.calculate_angle(&center, &p1), 0.0);
         assert!((handler.calculate_angle(&center, &p2) - PI / 2.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_velocity_calculation() {
+        let config = CircleStartConfig {
+            radius: 100.0,
+            speed_multiplier: 2.0,
+            angle_smoothing: 0.5,
+            ..CircleStartConfig::default()
+        };
+        let mut handler = CircleStartHandler::new(config);
+
+        // Set center
+        handler.set_center(0.0, 0.0);
+
+        // Test velocity at different distances
+        let now = Instant::now();
+
+        // At center (should be 0)
+        handler.update_velocity(&Coordinates { x: 0.0, y: 0.0 }, now);
+        assert!(handler.smoothed_velocity < 0.1);
+
+        // At half radius to the right (should be positive)
+        handler.update_velocity(&Coordinates { x: 50.0, y: 0.0 }, now);
+        assert!((handler.smoothed_velocity - 0.5).abs() < 0.1);
+
+        // At full radius to the right (should be positive)
+        handler.update_velocity(&Coordinates { x: 100.0, y: 0.0 }, now);
+        assert!((handler.smoothed_velocity - 1.25).abs() < 0.1);
+
+        // Beyond radius to the right (should be capped)
+        handler.update_velocity(&Coordinates { x: 200.0, y: 0.0 }, now);
+        assert!((handler.smoothed_velocity - 1.625).abs() < 0.1);
+    }
+
+    #[test]
+    fn test_backward_movement() {
+        let config = CircleStartConfig {
+            radius: 100.0,
+            speed_multiplier: 2.0,
+            angle_smoothing: 0.5,
+            ..CircleStartConfig::default()
+        };
+        let mut handler = CircleStartHandler::new(config);
+
+        // Set center
+        handler.set_center(0.0, 0.0);
+
+        // Test velocity at different positions
+        let now = Instant::now();
+
+        // Reset velocity
+        handler.smoothed_velocity = 0.0;
+
+        // To the left (should be negative)
+        handler.update_velocity(&Coordinates { x: -50.0, y: 0.0 }, now);
+        assert!(handler.smoothed_velocity < 0.0);
+        assert!((handler.smoothed_velocity + 0.5).abs() < 0.1);
+
+        // To the left at full radius (should be more negative)
+        handler.update_velocity(&Coordinates { x: -100.0, y: 0.0 }, now);
+        assert!(handler.smoothed_velocity < 0.0);
+        assert!((handler.smoothed_velocity + 1.25).abs() < 0.1);
+
+        // Above center (should be positive)
+        handler.smoothed_velocity = 0.0;
+        handler.update_velocity(&Coordinates { x: 0.0, y: 50.0 }, now);
+        assert!(handler.smoothed_velocity > 0.0);
+
+        // Below center (should be positive)
+        handler.smoothed_velocity = 0.0;
+        handler.update_velocity(&Coordinates { x: 0.0, y: -50.0 }, now);
+        assert!(handler.smoothed_velocity > 0.0);
     }
 }

@@ -94,6 +94,26 @@ impl DasherModel {
     pub fn apply_input_coordinates(&mut self, _coords: (i64, i64)) {
         // Stub: No-op for now
     }
+
+    /// Stop the model (clear scheduled steps)
+    pub fn stop(&mut self) {
+        self.clear_scheduled_steps();
+    }
+
+    /// Set the velocity of the model
+    pub fn set_velocity(&mut self, velocity: f64) {
+        // Calculate the target range based on velocity
+        // Higher velocity = wider target range
+        let base_range = 4000;
+        let range = (base_range as f64 * velocity) as i64;
+
+        // Calculate the target coordinates
+        let y1 = Self::ORIGIN_Y - range / 2;
+        let y2 = Self::ORIGIN_Y + range / 2;
+
+        // Schedule a step with the calculated range
+        self.schedule_one_step(y1, y2, 1, 100, false);
+    }
     /// Y origin constant for coordinate calculations
     pub const ORIGIN_Y: i64 = 0;
     /// Placeholder for word predictions
@@ -717,6 +737,11 @@ impl DasherModel {
             self.root_min = center - (max_width as i64) / 2;
             self.root_max = center + (max_width as i64) / 2;
         }
+    }
+
+    /// Get the root node
+    pub fn get_root_node(&self) -> Option<Rc<RefCell<DasherNode>>> {
+        self.root.clone()
     }
 
     /// Render the model to a view
