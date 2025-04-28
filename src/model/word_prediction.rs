@@ -86,15 +86,15 @@ pub fn create_default_manager<M: LanguageModel + 'static>(
     _language_model: M,
     max_predictions: usize,
 ) -> WordPredictionManager {
-    let manager = WordPredictionManager::new(max_predictions, 3);
+    
 
-    manager
+    WordPredictionManager::new(max_predictions, 3)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::word_generator::{PredictiveWordGenerator, BaseWordGenerator, WordGenerator};
+    use crate::model::word_generator::{PredictiveWordGenerator, BaseWordGenerator};
     use crate::alphabet::{AlphabetInfo, AlphabetMap};
     use crate::model::language::LanguageModel;
     use std::collections::HashMap;

@@ -68,6 +68,12 @@ pub struct DefaultFilter {
     got_mouse_coords: bool,
 }
 
+impl Default for DefaultFilter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultFilter {
     /// Create a new default filter
     pub fn new() -> Self {
@@ -225,6 +231,7 @@ pub struct OneDimensionalFilter {
 
 impl OneDimensionalFilter {
     /// Create a new one-dimensional filter
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             base: DefaultFilter::new(),
@@ -312,6 +319,7 @@ pub struct ButtonInputFilter {
 
 impl ButtonInputFilter {
     /// Create a new button input filter
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             paused: false,
@@ -360,6 +368,7 @@ pub struct StylusInputFilter {
 
 impl StylusInputFilter {
     /// Create a new stylus input filter
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             paused: false,
@@ -414,6 +423,7 @@ pub struct ClickFilter {
 }
 
 impl ClickFilter {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             last_x: 0,

@@ -140,6 +140,12 @@ pub struct InputManager {
     paused: bool,
 }
 
+impl Default for InputManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InputManager {
     /// Create a new input manager
     pub fn new() -> Self {

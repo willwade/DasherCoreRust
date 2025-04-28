@@ -268,20 +268,17 @@ impl DasherInterface {
 
     /// Handle a parameter change
     pub fn handle_parameter_change(&mut self, parameter: Parameter) {
-        match parameter {
-            Parameter::Orientation => {
-                if let Some(view) = &mut self.view {
-                    let orientation = match self.settings.get_long(Parameter::Orientation).unwrap_or(0) {
-                        0 => Orientation::LeftToRight,
-                        1 => Orientation::RightToLeft,
-                        2 => Orientation::TopToBottom,
-                        3 => Orientation::BottomToTop,
-                        _ => Orientation::LeftToRight,
-                    };
-                    view.set_orientation(orientation);
-                }
+        if parameter == Parameter::Orientation {
+            if let Some(view) = &mut self.view {
+                let orientation = match self.settings.get_long(Parameter::Orientation).unwrap_or(0) {
+                    0 => Orientation::LeftToRight,
+                    1 => Orientation::RightToLeft,
+                    2 => Orientation::TopToBottom,
+                    3 => Orientation::BottomToTop,
+                    _ => Orientation::LeftToRight,
+                };
+                view.set_orientation(orientation);
             }
-            _ => {}
         }
     }
 }

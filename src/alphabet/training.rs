@@ -42,6 +42,12 @@ pub struct TrainingStats {
     pub last_update: SystemTime,
 }
 
+impl Default for TrainingStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TrainingStats {
     /// Create new empty training statistics
     pub fn new() -> Self {
@@ -113,6 +119,7 @@ pub struct TrainingManager {
     /// Alphabet information
     alphabet: AlphabetInfo,
     /// Alphabet map for symbol lookup
+    #[allow(dead_code)]
     alphabet_map: AlphabetMap,
     /// Training statistics
     stats: TrainingStats,

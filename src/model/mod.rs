@@ -83,6 +83,12 @@ pub struct DasherModel {
     output_text: String,
 }
 
+impl Default for DasherModel {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DasherModel {
     /// Stub for input coordinate application
     pub fn apply_input_coordinates(&mut self, _coords: (i64, i64)) {
@@ -109,11 +115,11 @@ impl DasherModel {
 
     /// Create a new Dasher model with custom language model
     pub fn with_language_model(language_model: Box<dyn LanguageModel>) -> Self {
-    
+
         use crate::model::word_prediction::WordPredictionManager;
         use crate::action::{ActionManager, BackspaceAction, SpaceAction, AcceptAction};
-        let mut word_prediction = WordPredictionManager::new(10, 32);
-    
+        let word_prediction = WordPredictionManager::new(10, 32);
+
         let mut action_manager = ActionManager::new();
         action_manager.register_action(Box::new(BackspaceAction));
         action_manager.register_action(Box::new(SpaceAction));
@@ -313,9 +319,9 @@ impl DasherModel {
             let probs = if let Some(lm) = &mut self.language_model {
                 // Use the language model to get probabilities
                 let context = lm.create_empty_context();
-                let probs = lm.get_probs(&context);
+
                 // lm.release_context(context);
-                probs
+                lm.get_probs(&context)
             } else {
                 // Use uniform probabilities
                 let num_symbols = alphabet.size();
@@ -399,13 +405,13 @@ impl DasherModel {
             let range = self.root_max - self.root_min;
             let new_root_ref = new_root.borrow();
             self.root_max = self.root_min + (range * new_root_ref.upper_bound() as i64) / (Self::NORMALIZATION as i64);
-            self.root_min = self.root_min + (range * new_root_ref.lower_bound() as i64) / (Self::NORMALIZATION as i64);
+            self.root_min += (range * new_root_ref.lower_bound() as i64) / (Self::NORMALIZATION as i64);
 
             // Update any scheduled steps
             for step in &mut self.goto_queue {
                 let r = step.1 - step.0;
                 step.1 = step.0 + (r * new_root_ref.upper_bound() as i64) / (Self::NORMALIZATION as i64);
-                step.0 = step.0 + (r * new_root_ref.lower_bound() as i64) / (Self::NORMALIZATION as i64);
+                step.0 += (r * new_root_ref.lower_bound() as i64) / (Self::NORMALIZATION as i64);
             }
         }
     }
@@ -454,8 +460,8 @@ impl DasherModel {
             self.root = Some(parent_node);
 
             // Update the coordinates
-            self.root_max = self.root_max + ((Self::NORMALIZATION as i64 - upper) * root_width) / range;
-            self.root_min = self.root_min - (lower * root_width) / range;
+            self.root_max += ((Self::NORMALIZATION as i64 - upper) * root_width) / range;
+            self.root_min -= (lower * root_width) / range;
 
             // Update any scheduled steps
             for step in &mut self.goto_queue {
@@ -751,6 +757,7 @@ impl DasherModel {
     }
 
     /// Render a node and its children
+    #[allow(dead_code)]
     fn render_node<S: DasherScreen + ?Sized>(&self, view: &mut S, node: &Rc<RefCell<DasherNode>>, x1: i32, y1: i32, x2: i32, y2: i32) {
         let node_ref = node.borrow();
 
@@ -847,7 +854,7 @@ impl DasherModel {
             view.draw_rectangle(0, y1, width, y2, color, crate::view::color_palette::BLACK, 1);
 
             // Draw a letter in the slice
-            let letter = ('a' as u8 + i as u8) as char;
+            let letter = (b'a' + i as u8) as char;
             let label = view.make_label(&letter.to_string(), 0);
             let font_size = 24;
             let (text_width, text_height) = view.text_size(&*label, font_size);
@@ -871,6 +878,7 @@ impl DasherModel {
     }
 
     /// Draw nested boxes to simulate the Dasher zooming effect
+    #[allow(dead_code)]
     fn draw_nested_boxes<S: DasherScreen + ?Sized>(
         &self,
         view: &mut S,

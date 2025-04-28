@@ -305,8 +305,8 @@ pub fn do_action(&mut self) {
         }
     }
 
-    /// Clone this node
-    pub fn clone(&self) -> Self {
+    /// Create a shallow clone of this node (without children)
+    pub fn shallow_clone(&self) -> Self {
         Self {
             lower_bound: self.lower_bound,
             upper_bound: self.upper_bound,
@@ -320,5 +320,12 @@ pub fn do_action(&mut self) {
             foreground_color: self.foreground_color,
             background_color: self.background_color,
         }
+    }
+}
+
+/// Implement Clone for DasherNode
+impl Clone for DasherNode {
+    fn clone(&self) -> Self {
+        self.shallow_clone()
     }
 }

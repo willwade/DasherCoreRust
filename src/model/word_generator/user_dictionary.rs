@@ -29,11 +29,9 @@ impl UserDictionaryWordGenerator {
         self.words.clear();
         if let Ok(file) = File::open(&self.dict_path) {
             let reader = BufReader::new(file);
-            for line in reader.lines() {
-                if let Ok(word) = line {
-                    if !word.trim().is_empty() {
-                        self.words.push(word.trim().to_string());
-                    }
+            for word in reader.lines().flatten() {
+                if !word.trim().is_empty() {
+                    self.words.push(word.trim().to_string());
                 }
             }
         }
@@ -84,7 +82,7 @@ impl WordGenerator for UserDictionaryWordGenerator {
 mod tests {
     use super::*;
     use crate::alphabet::{AlphabetInfo, AlphabetMap};
-    use std::fs;
+
     use tempfile::NamedTempFile;
 
     #[test]

@@ -186,8 +186,8 @@ impl InputFilter for ButtonHandler {
 
     fn supports_pause(&self) -> bool {
         match self.config.mode {
-            ButtonMode::Dynamic => self.dynamic_filter.as_ref().map_or(false, |f| f.supports_pause()),
-            ButtonMode::MultiPress => self.multi_press.as_ref().map_or(false, |f| f.supports_pause()),
+            ButtonMode::Dynamic => self.dynamic_filter.as_ref().is_some_and(|f| f.supports_pause()),
+            ButtonMode::MultiPress => self.multi_press.as_ref().is_some_and(|f| f.supports_pause()),
             ButtonMode::Direct => false,
         }
     }
@@ -226,8 +226,8 @@ impl InputFilter for ButtonHandler {
 
     fn is_paused(&self) -> bool {
         match self.config.mode {
-            ButtonMode::Dynamic => self.dynamic_filter.as_ref().map_or(false, |f| f.is_paused()),
-            ButtonMode::MultiPress => self.multi_press.as_ref().map_or(false, |f| f.is_paused()),
+            ButtonMode::Dynamic => self.dynamic_filter.as_ref().is_some_and(|f| f.is_paused()),
+            ButtonMode::MultiPress => self.multi_press.as_ref().is_some_and(|f| f.is_paused()),
             ButtonMode::Direct => false,
         }
     }
@@ -270,8 +270,8 @@ impl InputFilter for ButtonHandler {
 
     fn decorate_view(&mut self, view: &mut dyn DasherView) -> bool {
         match self.config.mode {
-            ButtonMode::Dynamic => self.dynamic_filter.as_mut().map_or(false, |f| f.decorate_view(view)),
-            ButtonMode::MultiPress => self.multi_press.as_mut().map_or(false, |f| f.decorate_view(view)),
+            ButtonMode::Dynamic => self.dynamic_filter.as_mut().is_some_and(|f| f.decorate_view(view)),
+            ButtonMode::MultiPress => self.multi_press.as_mut().is_some_and(|f| f.decorate_view(view)),
             ButtonMode::Direct => false,
         }
     }

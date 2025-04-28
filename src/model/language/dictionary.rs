@@ -25,6 +25,12 @@ pub struct Dictionary {
     max_prefix_length: usize,
 }
 
+impl Default for Dictionary {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Dictionary {
     /// Create a new empty dictionary
     pub fn new() -> Self {
@@ -75,7 +81,7 @@ impl Dictionary {
             let prefix = &word[..i];
             self.prefix_cache
                 .entry(prefix.to_string())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(word.to_string());
         }
     }

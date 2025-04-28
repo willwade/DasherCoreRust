@@ -17,6 +17,12 @@ pub struct ActionManager {
     actions: HashMap<String, Box<dyn Action>>,
 }
 
+impl Default for ActionManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActionManager {
     pub fn new() -> Self {
         Self { actions: HashMap::new() }
@@ -41,7 +47,7 @@ impl Action for BackspaceAction {
         let text = model.output_text();
         if !text.is_empty() {
             let mut new_text = text.to_string();
-            if let Some(idx) = new_text.char_indices().rev().next().map(|(i, _)| i) {
+            if let Some(idx) = new_text.char_indices().next_back().map(|(i, _)| i) {
                 new_text.truncate(idx);
             } else {
                 new_text.clear();
@@ -77,7 +83,7 @@ impl Action for UndoAction {
         let text = model.output_text();
         if !text.is_empty() {
             let mut new_text = text.to_string();
-            if let Some(idx) = new_text.char_indices().rev().next().map(|(i, _)| i) {
+            if let Some(idx) = new_text.char_indices().next_back().map(|(i, _)| i) {
                 new_text.truncate(idx);
             } else {
                 new_text.clear();

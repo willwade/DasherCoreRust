@@ -51,6 +51,12 @@ pub struct MouseInput {
     active: bool,
 }
 
+impl Default for MouseInput {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MouseInput {
     /// Create a new mouse input
     pub fn new() -> Self {
@@ -155,6 +161,7 @@ pub struct OneDimensionalInput {
 
 impl OneDimensionalInput {
     /// Create a new one-dimensional input
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             name: "One-Dimensional".to_string(),
@@ -164,6 +171,7 @@ impl OneDimensionalInput {
     }
 
     /// Set the Y coordinate
+    #[allow(dead_code)]
     pub fn set_y_coordinate(&mut self, y: i32) {
         self.y = y;
     }
@@ -235,17 +243,21 @@ pub struct EyeTrackerInput {
     active: bool,
 
     /// Smoothing factor for eye tracking
+    #[allow(dead_code)]
     smoothing_factor: f64,
 
     /// Previous X coordinate
+    #[allow(dead_code)]
     prev_x: i32,
 
     /// Previous Y coordinate
+    #[allow(dead_code)]
     prev_y: i32,
 }
 
 impl EyeTrackerInput {
     /// Create a new eye tracker input
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             name: "Eye Tracker".to_string(),
@@ -259,6 +271,7 @@ impl EyeTrackerInput {
     }
 
     /// Set the coordinates
+    #[allow(dead_code)]
     pub fn set_coordinates(&mut self, x: i32, y: i32) {
         // Apply smoothing
         self.x = ((self.prev_x as f64 * self.smoothing_factor) + (x as f64 * (1.0 - self.smoothing_factor))) as i32;
@@ -269,6 +282,7 @@ impl EyeTrackerInput {
     }
 
     /// Set the smoothing factor
+    #[allow(dead_code)]
     pub fn set_smoothing_factor(&mut self, factor: f64) {
         self.smoothing_factor = factor.max(0.0).min(1.0);
     }

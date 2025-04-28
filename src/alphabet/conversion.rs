@@ -33,6 +33,12 @@ impl From<ConversionRule> for ConversionTable {
     }
 }
 
+impl Default for ConversionTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConversionTable {
     /// Get all rules in this table
     pub fn get_all_rules(&self) -> &[ConversionRule] {
@@ -93,6 +99,12 @@ pub struct ConversionManager {
     tables: HashMap<AlphabetConversion, ConversionTable>,
     /// Current context for context-sensitive conversions
     current_context: String,
+}
+
+impl Default for ConversionManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ConversionManager {

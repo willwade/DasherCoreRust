@@ -6,12 +6,14 @@ use std::cell::RefCell;
 #[derive(Debug, Clone)]
 pub struct PPMNode {
     /// Symbol stored in this node
+    #[allow(dead_code)]
     symbol: Option<char>,
     /// Count of times this sequence has been seen
     count: usize,
     /// Child nodes
-    pub children: HashMap<char, Rc<RefCell<PPMNode>>>, 
+    pub children: HashMap<char, Rc<RefCell<PPMNode>>>,
     /// Parent node
+    #[allow(dead_code)]
     parent: Option<Rc<RefCell<PPMNode>>>,
     /// Total count of all children
     total_count: usize,
@@ -169,7 +171,7 @@ impl PPMLanguageModel {
             } else {
                 let len = context.len();
                 if order as usize > len {
-                    &context[..]
+                    context
                 } else {
                     &context[len - order as usize..]
                 }
@@ -210,7 +212,7 @@ impl PPMLanguageModel {
             }
             let mass = alpha * 1.0;
             let mut assigned = 0;
-            for (symbol, _child) in &node_ref.children {
+            for symbol in node_ref.children.keys() {
                 if !seen.contains_key(symbol) {
                     probs.insert(*symbol, mass / total);
                     // println!("[PPM][predict]   assigned symbol '{}' prob {}", symbol, mass / total);

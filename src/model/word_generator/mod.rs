@@ -11,7 +11,7 @@ pub use predictive::PredictiveWordGenerator;
 pub use user_dictionary::UserDictionaryWordGenerator;
 
 /// Trait for word generators that can provide words based on various conditions.
-/// 
+///
 /// Word generators encapsulate logic for generating words based on implementation-specific
 /// conditions. This could be from a file, dictionary, or any other source.
 pub trait WordGenerator {
@@ -24,7 +24,7 @@ pub trait WordGenerator {
     fn get_symbols(&self, word: &str) -> Vec<u32>;
 
     /// Generate a list of words for the given context (default: repeatedly call next_word)
-    fn generate_words(&mut self, context: &str) -> Vec<String> {
+    fn generate_words(&mut self, _context: &str) -> Vec<String> {
         let mut words = Vec::new();
         for _ in 0..100 {
             if let Some(word) = self.next_word() {
@@ -57,6 +57,7 @@ impl From<io::Error> for WordGeneratorError {
 /// Base implementation for word generators that use an alphabet
 pub struct BaseWordGenerator {
     /// The alphabet information
+    #[allow(dead_code)]
     alphabet_info: AlphabetInfo,
     /// The alphabet map for converting between symbols and indices
     alphabet_map: AlphabetMap,
@@ -228,7 +229,7 @@ impl WordGenerator for FileWordGenerator {
 //         let file = create_test_file();
 //         let alphabet_info = AlphabetInfo::default(); // You'll need to implement this
 //         let alphabet_map = AlphabetMap::default();   // You'll need to implement this
-//     
+//
 //         let mut generator = FileWordGenerator::new(
 //             alphabet_info,
 //             alphabet_map,

@@ -40,6 +40,12 @@ pub struct Settings {
     values: HashMap<Parameter, ParameterValue>,
 }
 
+impl Default for Settings {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Settings {
     /// Create a new settings store with default values
     pub fn new() -> Self {

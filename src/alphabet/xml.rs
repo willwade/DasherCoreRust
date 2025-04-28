@@ -161,7 +161,7 @@ scheme.add_color(bg.r, bg.g, bg.b, bg.a);
                             let name = String::from_utf8_lossy(name).into_owned();
                             current_group = Some(GroupInfo::new(name));
                         }
-                        name if name.as_ref() == b"character" => {
+                        name if name == b"character" => {
                             current_character = Some(Character::default());
                         }
                         _ => {}
@@ -211,6 +211,7 @@ pub struct AlphabetXmlWriter<W: Write> {
 
 impl<W: Write> AlphabetXmlWriter<W> {
     /// Write color schemes to XML
+    #[allow(dead_code)]
     pub fn write_color_schemes(&mut self, schemes: &[ColorScheme]) -> Result<(), AlphabetXmlError> {
         // Write XML declaration
         let decl = BytesDecl::new("1.0", Some("UTF-8"), None);
@@ -238,13 +239,13 @@ impl<W: Write> AlphabetXmlWriter<W> {
                 let mut pair_elem = BytesStart::new("pair");
                 pair_elem.push_attribute(("index", i.to_string().as_str()));
                 self.writer.write_event(Event::Start(pair_elem.clone()))?;
-                
+
                 // Create Color objects for the XML writer
                 let fg = Color { r, g, b, a };
                 let bg = Color { r, g, b, a };
 
-                self.write_element("foreground", &fg.to_hex())?;
-                self.write_element("background", &bg.to_hex())?;
+                self.write_element("foreground", fg.to_hex())?;
+                self.write_element("background", bg.to_hex())?;
 
                 self.writer.write_event(Event::End(BytesEnd::new("pair")))?;
             }
@@ -275,7 +276,7 @@ impl<W: Write> AlphabetXmlWriter<W> {
         self.writer.write_event(Event::End(BytesEnd::new(name.as_ref())))?;
         Ok(())
     }
-    
+
     /// Write an alphabet to XML
     pub fn write(&mut self, alphabet: &AlphabetInfo) -> Result<(), AlphabetXmlError> {
         // Write XML declaration
@@ -289,7 +290,7 @@ impl<W: Write> AlphabetXmlWriter<W> {
 
         // Write settings
         self.write_element("training", &alphabet.training_file)?;
-        self.write_element("orientation", &format!("{:?}", alphabet.orientation))?;
+        self.write_element("orientation", format!("{:?}", alphabet.orientation))?;
         self.write_element("encoding", "UTF-8")?;
 
         // Write characters
@@ -310,6 +311,7 @@ impl<W: Write> AlphabetXmlWriter<W> {
     }
 
     /// Write a setting element
+    #[allow(dead_code)]
     fn write_setting(&mut self, name: &str, value: &str) -> Result<(), AlphabetXmlError> {
         let mut elem = BytesStart::new("setting");
         elem.push_attribute(("name", name));
@@ -320,6 +322,7 @@ impl<W: Write> AlphabetXmlWriter<W> {
 }
 
 /// Save color schemes to an XML file
+#[allow(dead_code)]
 pub fn save_color_schemes<P: AsRef<Path>>(schemes: &[ColorScheme], path: P) -> Result<(), AlphabetXmlError> {
     let file = File::create(path)?;
     let writer = BufWriter::new(file);

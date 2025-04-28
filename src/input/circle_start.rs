@@ -44,6 +44,7 @@ enum CircleState {
     /// Inside circle, tracking angle
     Tracking {
         start_time: Instant,
+        #[allow(dead_code)]
         start_angle: f64,
         current_angle: f64,
         total_angle: f64,
@@ -51,7 +52,9 @@ enum CircleState {
     },
     /// Circle completed, active
     Active {
+        #[allow(dead_code)]
         start_time: Instant,
+        #[allow(dead_code)]
         angle_velocity: f64,
     },
 }
@@ -250,7 +253,7 @@ impl InputFilter for CircleStartHandler {
                     }
                 }
             }
-            self.current_coords = coords.clone();
+            self.current_coords = coords;
         }
     }
 

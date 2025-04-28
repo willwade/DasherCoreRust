@@ -301,17 +301,26 @@ pub extern "C" fn dasher_interface_create(
     Box::into_raw(Box::new(DasherInterfaceFFI { interface }))
 }
 
+/// # Safety
+///
+/// The `interface` pointer must be a valid pointer to a `DasherInterfaceFFI` object
+/// that was created by `dasher_create_interface`. After this function is called,
+/// the pointer is no longer valid and should not be used.
 #[no_mangle]
-pub extern "C" fn dasher_interface_destroy(interface: *mut DasherInterfaceFFI) {
+pub unsafe extern "C" fn dasher_interface_destroy(interface: *mut DasherInterfaceFFI) {
     if !interface.is_null() {
-        unsafe {
-            let _ = Box::from_raw(interface);
-        }
+        let _ = Box::from_raw(interface);
     }
 }
 
+/// Process a new frame in the Dasher interface
+///
+/// # Safety
+///
+/// The `interface` pointer must be a valid pointer to a `DasherInterfaceFFI` object
+/// that was created by `dasher_create_interface`.
 #[no_mangle]
-pub extern "C" fn dasher_interface_new_frame(
+pub unsafe extern "C" fn dasher_interface_new_frame(
     interface: *mut DasherInterfaceFFI,
     time_ms: u64
 ) -> bool {
@@ -319,9 +328,7 @@ pub extern "C" fn dasher_interface_new_frame(
         return false;
     }
 
-    unsafe {
-        (*interface).interface.new_frame(time_ms)
-    }
+    (*interface).interface.new_frame(time_ms)
 }
 
 /// Create a mouse input device
@@ -332,18 +339,22 @@ pub extern "C" fn dasher_create_mouse_input() -> *mut DasherInputFFI {
 }
 
 /// Destroy an input device
+///
+/// # Safety
+///
+/// The `input` pointer must be a valid pointer to a `DasherInputFFI` object
+/// that was created by `dasher_create_mouse_input`. After this function is called,
+/// the pointer is no longer valid and should not be used.
 #[no_mangle]
-pub extern "C" fn dasher_destroy_input(input: *mut DasherInputFFI) {
+pub unsafe extern "C" fn dasher_destroy_input(input: *mut DasherInputFFI) {
     if !input.is_null() {
-        unsafe {
-            let _ = Box::from_raw(input);
-        }
+        let _ = Box::from_raw(input);
     }
 }
 
 /// Set the input device for a DasherInterface
 #[no_mangle]
-pub extern "C" fn dasher_interface_set_input(
+pub unsafe extern "C" fn dasher_interface_set_input(
     interface: *mut DasherInterfaceFFI,
     input: *mut DasherInputFFI
 ) -> bool {
@@ -351,18 +362,16 @@ pub extern "C" fn dasher_interface_set_input(
         return false;
     }
 
-    unsafe {
-        let input_box = Box::from_raw(input);
-        (*interface).interface.set_input(input_box.input.box_clone());
-        // Don't drop the input, just forget the box
-        std::mem::forget(input_box);
-        true
-    }
+    let input_box = Box::from_raw(input);
+    (*interface).interface.set_input(input_box.input.box_clone());
+    // Don't drop the input, just forget the box
+    std::mem::forget(input_box);
+    true
 }
 
 /// Set mouse coordinates for a mouse input device
 #[no_mangle]
-pub extern "C" fn dasher_set_mouse_coordinates(
+pub unsafe extern "C" fn dasher_set_mouse_coordinates(
     input: *mut DasherInputFFI,
     x: i32,
     y: i32
@@ -371,29 +380,27 @@ pub extern "C" fn dasher_set_mouse_coordinates(
         return false;
     }
 
-    unsafe {
-        // For now, we'll assume it's a MouseInput since that's all we're using
-        // In a more complete implementation, we'd need a way to check the type
-        let input_ref = &mut (*input).input;
+    // For now, we'll assume it's a MouseInput since that's all we're using
+    // In a more complete implementation, we'd need a way to check the type
+    let input_ref = &mut (*input).input;
 
-        // Check if the name contains "Mouse" as a simple heuristic
-        if input_ref.get_name().contains("Mouse") {
-            // Create a new MouseInput with the updated coordinates
-            let mut new_mouse = MouseInput::new();
-            new_mouse.set_coordinates(x, y);
+    // Check if the name contains "Mouse" as a simple heuristic
+    if input_ref.get_name().contains("Mouse") {
+        // Create a new MouseInput with the updated coordinates
+        let mut new_mouse = MouseInput::new();
+        new_mouse.set_coordinates(x, y);
 
-            // Replace the input with the new one
-            *input_ref = Box::new(new_mouse);
-            true
-        } else {
-            false
-        }
+        // Replace the input with the new one
+        *input_ref = Box::new(new_mouse);
+        true
+    } else {
+        false
     }
 }
 
 /// Handle a key down event
 #[no_mangle]
-pub extern "C" fn dasher_interface_key_down(
+pub unsafe extern "C" fn dasher_interface_key_down(
     interface: *mut DasherInterfaceFFI,
     time_ms: u64,
     key: i32
@@ -402,36 +409,34 @@ pub extern "C" fn dasher_interface_key_down(
         return;
     }
 
-    unsafe {
-        let virtual_key = match key {
-            0 => VirtualKey::PrimaryInput,
-            1 => VirtualKey::SecondaryInput,
-            2 => VirtualKey::TertiaryInput,
-            3 => VirtualKey::StartStopKey,
-            4 => VirtualKey::Button1,
-            5 => VirtualKey::Button2,
-            6 => VirtualKey::Button3,
-            7 => VirtualKey::Button4,
-            8 => VirtualKey::Button5,
-            9 => VirtualKey::Left,
-            10 => VirtualKey::Right,
-            11 => VirtualKey::Up,
-            12 => VirtualKey::Down,
-            13 => VirtualKey::Delete,
-            14 => VirtualKey::Backspace,
-            15 => VirtualKey::Tab,
-            16 => VirtualKey::Return,
-            17 => VirtualKey::Escape,
-            18 => VirtualKey::Space,
-            _ => VirtualKey::Other(' '),
-        };
-        (*interface).interface.key_down(time_ms, virtual_key);
-    }
+    let virtual_key = match key {
+        0 => VirtualKey::PrimaryInput,
+        1 => VirtualKey::SecondaryInput,
+        2 => VirtualKey::TertiaryInput,
+        3 => VirtualKey::StartStopKey,
+        4 => VirtualKey::Button1,
+        5 => VirtualKey::Button2,
+        6 => VirtualKey::Button3,
+        7 => VirtualKey::Button4,
+        8 => VirtualKey::Button5,
+        9 => VirtualKey::Left,
+        10 => VirtualKey::Right,
+        11 => VirtualKey::Up,
+        12 => VirtualKey::Down,
+        13 => VirtualKey::Delete,
+        14 => VirtualKey::Backspace,
+        15 => VirtualKey::Tab,
+        16 => VirtualKey::Return,
+        17 => VirtualKey::Escape,
+        18 => VirtualKey::Space,
+        _ => VirtualKey::Other(' '),
+    };
+    (*interface).interface.key_down(time_ms, virtual_key);
 }
 
 /// Handle a key up event
 #[no_mangle]
-pub extern "C" fn dasher_interface_key_up(
+pub unsafe extern "C" fn dasher_interface_key_up(
     interface: *mut DasherInterfaceFFI,
     time_ms: u64,
     key: i32
@@ -440,120 +445,104 @@ pub extern "C" fn dasher_interface_key_up(
         return;
     }
 
-    unsafe {
-        let virtual_key = match key {
-            0 => VirtualKey::PrimaryInput,
-            1 => VirtualKey::SecondaryInput,
-            2 => VirtualKey::TertiaryInput,
-            3 => VirtualKey::StartStopKey,
-            4 => VirtualKey::Button1,
-            5 => VirtualKey::Button2,
-            6 => VirtualKey::Button3,
-            7 => VirtualKey::Button4,
-            8 => VirtualKey::Button5,
-            9 => VirtualKey::Left,
-            10 => VirtualKey::Right,
-            11 => VirtualKey::Up,
-            12 => VirtualKey::Down,
-            13 => VirtualKey::Delete,
-            14 => VirtualKey::Backspace,
-            15 => VirtualKey::Tab,
-            16 => VirtualKey::Return,
-            17 => VirtualKey::Escape,
-            18 => VirtualKey::Space,
-            _ => VirtualKey::Other(' '),
-        };
-        (*interface).interface.key_up(time_ms, virtual_key);
-    }
+    let virtual_key = match key {
+        0 => VirtualKey::PrimaryInput,
+        1 => VirtualKey::SecondaryInput,
+        2 => VirtualKey::TertiaryInput,
+        3 => VirtualKey::StartStopKey,
+        4 => VirtualKey::Button1,
+        5 => VirtualKey::Button2,
+        6 => VirtualKey::Button3,
+        7 => VirtualKey::Button4,
+        8 => VirtualKey::Button5,
+        9 => VirtualKey::Left,
+        10 => VirtualKey::Right,
+        11 => VirtualKey::Up,
+        12 => VirtualKey::Down,
+        13 => VirtualKey::Delete,
+        14 => VirtualKey::Backspace,
+        15 => VirtualKey::Tab,
+        16 => VirtualKey::Return,
+        17 => VirtualKey::Escape,
+        18 => VirtualKey::Space,
+        _ => VirtualKey::Other(' '),
+    };
+    (*interface).interface.key_up(time_ms, virtual_key);
 }
 
 /// Start Dasher
 #[no_mangle]
-pub extern "C" fn dasher_interface_start(interface: *mut DasherInterfaceFFI) {
+pub unsafe extern "C" fn dasher_interface_start(interface: *mut DasherInterfaceFFI) {
     if interface.is_null() {
         return;
     }
 
-    unsafe {
-        (*interface).interface.start();
-    }
+    (*interface).interface.start();
 }
 
 /// Stop Dasher
 #[no_mangle]
-pub extern "C" fn dasher_interface_stop(interface: *mut DasherInterfaceFFI) {
+pub unsafe extern "C" fn dasher_interface_stop(interface: *mut DasherInterfaceFFI) {
     if interface.is_null() {
         return;
     }
 
-    unsafe {
-        (*interface).interface.stop();
-    }
+    (*interface).interface.stop();
 }
 
 /// Pause Dasher
 #[no_mangle]
-pub extern "C" fn dasher_interface_pause(interface: *mut DasherInterfaceFFI) {
+pub unsafe extern "C" fn dasher_interface_pause(interface: *mut DasherInterfaceFFI) {
     if interface.is_null() {
         return;
     }
 
-    unsafe {
-        (*interface).interface.pause();
-    }
+    (*interface).interface.pause();
 }
 
 /// Resume Dasher
 #[no_mangle]
-pub extern "C" fn dasher_interface_resume(interface: *mut DasherInterfaceFFI) {
+pub unsafe extern "C" fn dasher_interface_resume(interface: *mut DasherInterfaceFFI) {
     if interface.is_null() {
         return;
     }
 
-    unsafe {
-        (*interface).interface.resume();
-    }
+    (*interface).interface.resume();
 }
 
 /// Check if Dasher is running
 #[no_mangle]
-pub extern "C" fn dasher_interface_is_running(interface: *mut DasherInterfaceFFI) -> bool {
+pub unsafe extern "C" fn dasher_interface_is_running(interface: *mut DasherInterfaceFFI) -> bool {
     if interface.is_null() {
         return false;
     }
 
-    unsafe {
-        (*interface).interface.is_running()
-    }
+    (*interface).interface.is_running()
 }
 
 /// Check if Dasher is paused
 #[no_mangle]
-pub extern "C" fn dasher_interface_is_paused(interface: *mut DasherInterfaceFFI) -> bool {
+pub unsafe extern "C" fn dasher_interface_is_paused(interface: *mut DasherInterfaceFFI) -> bool {
     if interface.is_null() {
         return false;
     }
 
-    unsafe {
-        (*interface).interface.is_paused()
-    }
+    (*interface).interface.is_paused()
 }
 
 /// Get the current offset in the text buffer
 #[no_mangle]
-pub extern "C" fn dasher_interface_get_offset(interface: *mut DasherInterfaceFFI) -> i32 {
+pub unsafe extern "C" fn dasher_interface_get_offset(interface: *mut DasherInterfaceFFI) -> i32 {
     if interface.is_null() {
         return 0;
     }
 
-    unsafe {
-        (*interface).interface.get_offset()
-    }
+    (*interface).interface.get_offset()
 }
 
 /// Edit the output text
 #[no_mangle]
-pub extern "C" fn dasher_interface_edit_output(
+pub unsafe extern "C" fn dasher_interface_edit_output(
     interface: *mut DasherInterfaceFFI,
     text: *const c_char
 ) {
@@ -561,11 +550,9 @@ pub extern "C" fn dasher_interface_edit_output(
         return;
     }
 
-    unsafe {
-        let c_str = CStr::from_ptr(text);
-        if let Ok(text) = c_str.to_str() {
-            (*interface).interface.edit_output(text);
-        }
+    let c_str = CStr::from_ptr(text);
+    if let Ok(text) = c_str.to_str() {
+        (*interface).interface.edit_output(text);
     }
 }
 
@@ -581,17 +568,15 @@ pub extern "C" fn dasher_create_screen(
 
 /// Destroy a screen
 #[no_mangle]
-pub extern "C" fn dasher_destroy_screen(screen: *mut DasherScreenFFI) {
+pub unsafe extern "C" fn dasher_destroy_screen(screen: *mut DasherScreenFFI) {
     if !screen.is_null() {
-        unsafe {
-            let _ = Box::from_raw(screen);
-        }
+        let _ = Box::from_raw(screen);
     }
 }
 
 /// Set the draw rectangle callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_draw_rectangle_callback(
+pub unsafe extern "C" fn dasher_screen_set_draw_rectangle_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(x1: i32, y1: i32, x2: i32, y2: i32,
                           fill_r: u8, fill_g: u8, fill_b: u8, fill_a: u8,
@@ -602,14 +587,12 @@ pub extern "C" fn dasher_screen_set_draw_rectangle_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_draw_rectangle_fn(callback);
-    }
+    (*screen).screen.set_draw_rectangle_fn(callback);
 }
 
 /// Set the draw circle callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_draw_circle_callback(
+pub unsafe extern "C" fn dasher_screen_set_draw_circle_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(cx: i32, cy: i32, r: i32,
                           fill_r: u8, fill_g: u8, fill_b: u8, fill_a: u8,
@@ -620,14 +603,12 @@ pub extern "C" fn dasher_screen_set_draw_circle_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_draw_circle_fn(callback);
-    }
+    (*screen).screen.set_draw_circle_fn(callback);
 }
 
 /// Set the draw line callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_draw_line_callback(
+pub unsafe extern "C" fn dasher_screen_set_draw_line_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(x1: i32, y1: i32, x2: i32, y2: i32,
                           r: u8, g: u8, b: u8, a: u8,
@@ -637,14 +618,12 @@ pub extern "C" fn dasher_screen_set_draw_line_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_draw_line_fn(callback);
-    }
+    (*screen).screen.set_draw_line_fn(callback);
 }
 
 /// Set the draw string callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_draw_string_callback(
+pub unsafe extern "C" fn dasher_screen_set_draw_string_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(text: *const c_char, x: i32, y: i32, size: i32,
                           r: u8, g: u8, b: u8, a: u8),
@@ -653,14 +632,12 @@ pub extern "C" fn dasher_screen_set_draw_string_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_draw_string_fn(callback);
-    }
+    (*screen).screen.set_draw_string_fn(callback);
 }
 
 /// Set the make label callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_make_label_callback(
+pub unsafe extern "C" fn dasher_screen_set_make_label_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(text: *const c_char, size: i32) -> *mut std::ffi::c_void,
 ) {
@@ -668,14 +645,12 @@ pub extern "C" fn dasher_screen_set_make_label_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_make_label_fn(callback);
-    }
+    (*screen).screen.set_make_label_fn(callback);
 }
 
 /// Set the destroy label callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_destroy_label_callback(
+pub unsafe extern "C" fn dasher_screen_set_destroy_label_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(label: *mut std::ffi::c_void),
 ) {
@@ -683,14 +658,12 @@ pub extern "C" fn dasher_screen_set_destroy_label_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_destroy_label_fn(callback);
-    }
+    (*screen).screen.set_destroy_label_fn(callback);
 }
 
 /// Set the get text size callback for a screen
 #[no_mangle]
-pub extern "C" fn dasher_screen_set_get_text_size_callback(
+pub unsafe extern "C" fn dasher_screen_set_get_text_size_callback(
     screen: *mut DasherScreenFFI,
     callback: extern "C" fn(label: *mut std::ffi::c_void, size: i32, width: *mut i32, height: *mut i32),
 ) {
@@ -698,14 +671,12 @@ pub extern "C" fn dasher_screen_set_get_text_size_callback(
         return;
     }
 
-    unsafe {
-        (*screen).screen.set_get_text_size_fn(callback);
-    }
+    (*screen).screen.set_get_text_size_fn(callback);
 }
 
 /// Set the screen for a DasherInterface
 #[no_mangle]
-pub extern "C" fn dasher_interface_set_screen(
+pub unsafe extern "C" fn dasher_interface_set_screen(
     interface: *mut DasherInterfaceFFI,
     screen: *mut DasherScreenFFI,
 ) -> bool {
@@ -713,18 +684,16 @@ pub extern "C" fn dasher_interface_set_screen(
         return false;
     }
 
-    unsafe {
-        let interface = &mut *interface;
-        let screen_ref = &mut *screen;
-        let screen_clone = screen_ref.screen.clone();
-        let result = interface.interface.change_screen(Box::new(screen_clone));
-        result.is_ok()
-    }
+    let interface = &mut *interface;
+    let screen_ref = &mut *screen;
+    let screen_clone = screen_ref.screen.clone();
+    let result = interface.interface.change_screen(Box::new(screen_clone));
+    result.is_ok()
 }
 
 /// Get the output text
 #[no_mangle]
-pub extern "C" fn dasher_interface_get_output(
+pub unsafe extern "C" fn dasher_interface_get_output(
     interface: *mut DasherInterfaceFFI,
     buffer: *mut c_char,
     buffer_size: usize
@@ -733,27 +702,25 @@ pub extern "C" fn dasher_interface_get_output(
         return 0;
     }
 
-    unsafe {
-        let output = (*interface).interface.get_output_text();
-        let output_len = output.len();
+    let output = (*interface).interface.get_output_text();
+    let output_len = output.len();
 
-        if output_len == 0 {
-            return 0;
-        }
-
-        // Copy the output to the buffer
-        let copy_len = std::cmp::min(output_len, buffer_size - 1);
-        let output_bytes = output.as_bytes();
-
-        std::ptr::copy_nonoverlapping(
-            output_bytes.as_ptr(),
-            buffer as *mut u8,
-            copy_len
-        );
-
-        // Null-terminate the string
-        *buffer.add(copy_len) = 0;
-
-        copy_len
+    if output_len == 0 {
+        return 0;
     }
+
+    // Copy the output to the buffer
+    let copy_len = std::cmp::min(output_len, buffer_size - 1);
+    let output_bytes = output.as_bytes();
+
+    std::ptr::copy_nonoverlapping(
+        output_bytes.as_ptr(),
+        buffer as *mut u8,
+        copy_len
+    );
+
+    // Null-terminate the string
+    *buffer.add(copy_len) = 0;
+
+    copy_len
 }
