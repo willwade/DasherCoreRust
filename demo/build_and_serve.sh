@@ -9,7 +9,7 @@ fi
 
 # Build the WASM package
 echo "Building WASM package..."
-wasm-pack build --target web --release
+wasm-pack build --target web --release -- --features wasm
 
 # Serve the demo directory
 if command -v python3 &> /dev/null; then
