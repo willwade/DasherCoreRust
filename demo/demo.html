@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Dasher WASM Demo</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: #222; color: #fff; font-family: sans-serif; }
+    #dasher-canvas {
+      position: absolute; right: 0; top: 0; bottom: 0;
+      width: 320px; height: 100vh; background: #181818;
+      border-left: 2px solid #333;
+      cursor: crosshair;
+      display: block;
+    }
+    #output {
+      position: absolute; left: 20px; top: 20px; font-size: 2em; color: #fff;
+    }
+    #status {
+      position: absolute; left: 20px; top: 80px; font-size: 1.2em; color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div id="output">Output: <span id="typed"></span></div>
+  <div id="status">Training Status: <span id="training-status">Not started</span></div>
+  <canvas id="dasher-canvas" width="320" height="800"></canvas>
+  <script type="module" src="demo.js"></script>
+</body>
+</html>

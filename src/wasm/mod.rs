@@ -58,6 +58,8 @@ impl DasherInterfaceWasm {
     // TODO: Implement other WebAssembly bindings
 }
 
+
+
 /// WebAssembly implementation of DasherScreen using HTML Canvas
 #[derive(Clone)]
 pub struct WebDasherScreen {

@@ -158,7 +158,7 @@ impl DasherModel {
     }
 
     /// Update language model with new symbol
-    fn update_language_model(&mut self, symbol: char) {
+    pub fn update_language_model(&mut self, symbol: char) {
         if let Some(model) = &mut self.language_model {
             model.enter_symbol(symbol);
         }
