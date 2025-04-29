@@ -11,7 +11,10 @@ pub trait DasherInput {
     fn get_dasher_coordinates(&mut self, view: &dyn DasherView) -> Option<(i64, i64)>;
 
     /// Get the coordinates from the input device in screen coordinates
-    fn get_screen_coordinates(&mut self, view: &dyn DasherView) -> Option<(i32, i32)>;
+    fn get_screen_coordinates(&self, view: &dyn DasherView) -> Option<(i32, i32)>;
+
+    /// Set the screen position
+    fn set_screen_position(&mut self, x: i32, y: i32);
 
     /// Get the name of the input device
     fn get_name(&self) -> &str;
@@ -85,12 +88,16 @@ impl DasherInput for MouseInput {
         Some((x, y))
     }
 
-    fn get_screen_coordinates(&mut self, _view: &dyn DasherView) -> Option<(i32, i32)> {
+    fn get_screen_coordinates(&self, _view: &dyn DasherView) -> Option<(i32, i32)> {
         if !self.active {
             return None;
         }
 
         Some((self.x, self.y))
+    }
+
+    fn set_screen_position(&mut self, x: i32, y: i32) {
+        self.set_coordinates(x, y);
     }
 
     fn get_name(&self) -> &str {
@@ -188,7 +195,7 @@ impl DasherInput for OneDimensionalInput {
         Some((0, y))
     }
 
-    fn get_screen_coordinates(&mut self, view: &dyn DasherView) -> Option<(i32, i32)> {
+    fn get_screen_coordinates(&self, view: &dyn DasherView) -> Option<(i32, i32)> {
         if !self.active {
             return None;
         }
@@ -196,6 +203,11 @@ impl DasherInput for OneDimensionalInput {
         // In one-dimensional mode, the X coordinate depends on the orientation
         let (width, _) = view.get_dimensions();
         Some((width / 2, self.y))
+    }
+
+    fn set_screen_position(&mut self, _x: i32, y: i32) {
+        // In one-dimensional mode, we only care about the Y coordinate
+        self.set_y_coordinate(y);
     }
 
     fn get_name(&self) -> &str {
@@ -298,12 +310,17 @@ impl DasherInput for EyeTrackerInput {
         Some((x, y))
     }
 
-    fn get_screen_coordinates(&mut self, _view: &dyn DasherView) -> Option<(i32, i32)> {
+    fn get_screen_coordinates(&self, _view: &dyn DasherView) -> Option<(i32, i32)> {
         if !self.active {
             return None;
         }
 
         Some((self.x, self.y))
+    }
+
+    fn set_screen_position(&mut self, x: i32, y: i32) {
+        // Apply smoothing in the set_coordinates method
+        self.set_coordinates(x, y);
     }
 
     fn get_name(&self) -> &str {

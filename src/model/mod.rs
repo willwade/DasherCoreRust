@@ -100,6 +100,43 @@ impl DasherModel {
         self.clear_scheduled_steps();
     }
 
+    /// Reset the model to its initial state
+    pub fn reset(&mut self) {
+        // Clear scheduled steps
+        self.clear_scheduled_steps();
+
+        // Clear the output text
+        self.output_text.clear();
+
+        // Reset the root
+        if let Some(_root) = &self.root {
+            // Create a new root node
+            let new_root = Rc::new(RefCell::new(DasherNode::new(0, Some("Root".to_string()))));
+
+            // Set the new root
+            self.root = Some(new_root.clone());
+
+            // Expand the new root
+            self.expand_node(&new_root);
+
+            // Reset coordinates
+            self.root_min = 0;
+            self.root_max = 0;
+            self.display_offset = 0;
+
+            // Clear the last output
+            self.last_output = None;
+        }
+
+        // Clear old roots
+        self.old_roots.clear();
+
+        // Reset the language model
+        if let Some(model) = &mut self.language_model {
+            model.reset();
+        }
+    }
+
     /// Set the velocity of the model
     pub fn set_velocity(&mut self, velocity: f64) {
         // Calculate the target range based on velocity

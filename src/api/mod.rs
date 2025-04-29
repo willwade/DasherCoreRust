@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::model::{DasherModel, node::DasherNode};
-use crate::view::{DasherScreen, DasherView, DasherViewSquare, Orientation};
+use crate::view::{DasherScreen, DasherView, DasherViewSquare, Orientation, NodeShape};
 use crate::input::{DasherInput, InputFilter, InputManager, VirtualKey};
 use crate::settings::{Settings, Parameter};
 use crate::Result;
@@ -280,5 +280,194 @@ impl DasherInterface {
                 view.set_orientation(orientation);
             }
         }
+    }
+
+    /// Set the mouse position
+    pub fn set_mouse_position(&mut self, x: i32, y: i32) -> Result<()> {
+        // Add a method to InputManager to set the mouse position directly
+        self.input_manager.set_mouse_position(x, y)
+    }
+
+    /// Set the node shape for the Square View
+    pub fn set_node_shape(&mut self, shape: NodeShape) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_node_shape(shape);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable X nonlinearity
+    pub fn set_x_nonlinear(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_x_nonlinear(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable Y nonlinearity
+    pub fn set_y_nonlinear(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_y_nonlinear(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable 3D text
+    pub fn set_text_3d(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_text_3d(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable the flowing interface
+    pub fn set_flowing_interface(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_flowing_interface(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Set the flowing interface speed
+    pub fn set_flowing_speed(&mut self, speed: f64) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_flowing_speed(speed);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable PPM (Prediction by Partial Match)
+    pub fn set_ppm(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_ppm(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable drawing the crosshair
+    pub fn set_draw_crosshair(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_draw_crosshair(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable drawing the cursor
+    pub fn set_draw_cursor(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_draw_cursor(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Enable or disable drawing node outlines
+    pub fn set_draw_outlines(&mut self, enable: bool) -> Result<()> {
+        if let Some(view) = &mut self.view {
+            // Try to downcast to DasherViewSquare
+            let square_view = view.as_any_mut().downcast_mut::<DasherViewSquare>();
+            if let Some(square_view) = square_view {
+                square_view.set_draw_outlines(enable);
+                Ok(())
+            } else {
+                Err(crate::DasherError::RenderingError("View is not a Square View".to_string()))
+            }
+        } else {
+            Err(crate::DasherError::RenderingError("No view available".to_string()))
+        }
+    }
+
+    /// Reset the Dasher interface
+    pub fn reset(&mut self) -> Result<()> {
+        // Reset the model
+        self.model.reset();
+
+        // Reset the input manager
+        self.input_manager.reset();
+
+        Ok(())
+    }
+
+    /// Handle backspace
+    pub fn backspace(&mut self) -> Result<()> {
+        // Remove the last character from the output text
+        let text = self.model.output_text();
+        if !text.is_empty() {
+            let new_text = text.chars().take(text.chars().count() - 1).collect::<String>();
+            self.model.set_output_text(&new_text);
+        }
+
+        Ok(())
     }
 }

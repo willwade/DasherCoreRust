@@ -6,7 +6,9 @@ mod filter;
 mod device;
 mod button;
 mod circle_start;
-
+mod frame_rate;
+mod dynamic_filter;
+mod demo_filter;
 
 
 use crate::model::DasherModel;
@@ -16,6 +18,11 @@ pub use filter::{InputFilter, DefaultFilter};
 pub use device::{DasherInput, MouseInput};
 pub use button::{ButtonHandler, ButtonConfig, ButtonMode};
 pub use circle_start::{CircleStartHandler, CircleStartConfig};
+pub use frame_rate::FrameRate;
+pub use dynamic_filter::{DynamicFilter, DynamicFilterBase, DynamicFilterConfig};
+pub use demo_filter::{DemoDynamicFilter, DemoDynamicFilterConfig};
+pub use button::one_button_dynamic_filter::{OneButtonDynamicFilter, OneButtonDynamicFilterConfig};
+pub use button::two_button_dynamic_filter::{TwoButtonDynamicFilter, TwoButtonDynamicFilterConfig};
 
 // --- ADDED: Stub update traits for input handlers ---
 trait UpdatableInputHandler {
@@ -23,20 +30,30 @@ trait UpdatableInputHandler {
 }
 
 impl UpdatableInputHandler for Box<dyn InputFilter> {
-    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
-        // No-op stub
+    fn update(&mut self, device: &dyn DasherInput, model: &mut DasherModel, view: &mut dyn DasherView) {
+        // Clone the device to avoid borrowing issues
+        let mut device_clone = device.box_clone();
+        // Call the process method to handle the input filter logic
+        self.as_mut().process(&mut *device_clone, 0, model, view);
     }
 }
 
 impl UpdatableInputHandler for crate::input::CircleStartHandler {
-    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
-        // No-op stub
+    fn update(&mut self, device: &dyn DasherInput, model: &mut DasherModel, view: &mut dyn DasherView) {
+        // Clone the device to avoid borrowing issues
+        let mut device_clone = device.box_clone();
+        // Call the process method to handle the circle start logic
+        self.process(&mut *device_clone, 0, model, view);
     }
 }
 
 impl UpdatableInputHandler for crate::input::button::ButtonHandler {
-    fn update(&mut self, _device: &dyn DasherInput, _model: &mut DasherModel, _view: &mut dyn DasherView) {
-        // No-op stub
+    fn update(&mut self, device: &dyn DasherInput, model: &mut DasherModel, view: &mut dyn DasherView) {
+        // Process button input
+        if let Some(coords) = device.get_screen_coordinates(view) {
+            // Update the button state based on the coordinates
+            self.update_state(coords.0, coords.1, model);
+        }
     }
 }
 // --- END ADDED ---
@@ -46,61 +63,61 @@ impl UpdatableInputHandler for crate::input::button::ButtonHandler {
 pub enum VirtualKey {
     /// Primary input key (usually left mouse button)
     PrimaryInput,
-    
+
     /// Secondary input key (usually right mouse button)
     SecondaryInput,
-    
+
     /// Tertiary input key (usually middle mouse button)
     TertiaryInput,
-    
+
     /// Start/stop key (usually space)
     StartStopKey,
-    
+
     /// Button 1
     Button1,
-    
+
     /// Button 2
     Button2,
-    
+
     /// Button 3
     Button3,
-    
+
     /// Button 4
     Button4,
-    
+
     /// Button 5
     Button5,
-    
+
     /// Left arrow key
     Left,
-    
+
     /// Right arrow key
     Right,
-    
+
     /// Up arrow key
     Up,
-    
+
     /// Down arrow key
     Down,
-    
+
     /// Delete key
     Delete,
-    
+
     /// Backspace key
     Backspace,
-    
+
     /// Tab key
     Tab,
-    
+
     /// Return key
     Return,
-    
+
     /// Escape key
     Escape,
-    
+
     /// Space key
     Space,
-    
+
     /// Any other key
     Other(char),
 }
@@ -126,16 +143,16 @@ pub trait InputDevice {
 pub struct InputManager {
     /// Current input device
     input_device: Option<Box<dyn DasherInput>>,
-    
+
     /// Current input filter
     input_filter: Option<Box<dyn InputFilter>>,
-    
+
     /// Button handler
     button_handler: Option<ButtonHandler>,
-    
+
     /// Circle start handler
     circle_start: Option<CircleStartHandler>,
-    
+
     /// Whether the input is paused
     paused: bool,
 }
@@ -183,22 +200,37 @@ impl InputManager {
     pub fn is_circle_start_enabled(&self) -> bool {
         self.circle_start.is_some()
     }
-    
+
     /// Set the input device
     pub fn set_input_device(&mut self, device: Box<dyn DasherInput>) {
         self.input_device = Some(device);
     }
-    
+
     /// Get a reference to the input device
     pub fn get_input_device(&self) -> Option<&dyn DasherInput> {
         self.input_device.as_deref()
     }
-    
+
+    /// Set the mouse position for the input device
+    pub fn set_mouse_position(&mut self, x: i32, y: i32) -> Result<(), crate::DasherError> {
+        if let Some(input) = &mut self.input_device {
+            // Use a match to avoid borrowing issues
+            match input.as_mut() {
+                input => {
+                    input.set_screen_position(x, y);
+                    Ok(())
+                }
+            }
+        } else {
+            Err(crate::DasherError::InputError("No input device available".to_string()))
+        }
+    }
+
     /// Set the input filter
     pub fn set_input_filter(&mut self, filter: Box<dyn InputFilter>) {
         self.input_filter = Some(filter);
     }
-    
+
     /// Process input for a frame
     pub fn process_frame(&mut self, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         if self.paused {
@@ -226,57 +258,75 @@ impl InputManager {
             }
         }
     }
-    
+
     /// Handle a key down event
     pub fn key_down(&mut self, time: u64, key: VirtualKey, model: &mut DasherModel, view: &mut dyn DasherView) {
         if self.paused {
             return;
         }
-        
+
         if let Some(filter) = &mut self.input_filter {
             filter.key_down(time, key, model, view);
         }
-        
+
         if let Some(input) = &mut self.input_device {
             input.key_down(time, key);
         }
     }
-    
+
     /// Handle a key up event
     pub fn key_up(&mut self, time: u64, key: VirtualKey, model: &mut DasherModel, view: &mut dyn DasherView) {
         if self.paused {
             return;
         }
-        
+
         if let Some(filter) = &mut self.input_filter {
             filter.key_up(time, key, model, view);
         }
-        
+
         if let Some(input) = &mut self.input_device {
             input.key_up(time, key);
         }
     }
-    
+
     /// Pause input processing
     pub fn pause(&mut self) {
         self.paused = true;
-        
+
         if let Some(filter) = &mut self.input_filter {
             filter.pause();
         }
     }
-    
+
     /// Resume input processing
     pub fn resume(&mut self) {
         self.paused = false;
-        
+
         if let Some(filter) = &mut self.input_filter {
             filter.unpause();
         }
     }
-    
+
     /// Check if input processing is paused
     pub fn is_paused(&self) -> bool {
         self.paused
+    }
+
+    /// Reset the input manager
+    pub fn reset(&mut self) {
+        // Reset the input filter
+        if let Some(filter) = &mut self.input_filter {
+            filter.reset();
+        }
+
+        // Reset the button handler
+        if let Some(handler) = &mut self.button_handler {
+            handler.reset();
+        }
+
+        // Reset the circle start handler
+        if let Some(circle) = &mut self.circle_start {
+            circle.reset();
+        }
     }
 }

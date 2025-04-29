@@ -95,6 +95,15 @@ impl MultiPressMode {
         }
     }
 
+    /// Update coordinates based on screen position
+    pub fn update_coordinates(&mut self, x: i32, y: i32, model: &mut DasherModel) {
+        // Store the screen coordinates
+        self.current_coords = Coordinates { x: x as f64, y: y as f64 };
+
+        // Apply coordinates to model
+        model.apply_input_coordinates((x as i64, y as i64));
+    }
+
     /// Handle button press
     fn handle_press(&mut self, now: Instant) {
         if !self.state.is_held {
@@ -135,8 +144,8 @@ impl MultiPressMode {
         }
     }
 
-    /// Update coordinates based on current action
-    fn update_coordinates(&mut self, dt: Duration) {
+    /// Update coordinates based on current action (internal method)
+    fn _update_coordinates_internal(&mut self, dt: Duration) {
         let dt_secs = dt.as_secs_f64();
         let base_movement = self.config.base_speed * dt_secs;
 
@@ -189,7 +198,7 @@ impl InputFilter for MultiPressMode {
 
         // Update coordinates
         let dt = Duration::from_millis(16); // ~60 FPS
-        self.update_coordinates(dt);
+        self._update_coordinates_internal(dt);
 
         // Apply coordinates to model
         model.apply_input_coordinates((self.current_coords.x as i64, self.current_coords.y as i64));

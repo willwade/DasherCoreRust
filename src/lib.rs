@@ -15,6 +15,10 @@ pub use self::settings::{Parameter, Settings};
 pub use self::alphabet::{Alphabet, Symbol};
 pub use self::logging::{Logger, FileLogger};
 
+// Re-export WASM bindings
+#[cfg(feature = "wasm")]
+pub use self::wasm_api_simple::{init_dasher, set_canvas, new_frame, start, stop, pause, resume, reset, backspace, get_output_text, set_node_shape, set_x_nonlinear, set_y_nonlinear, set_text_3d, set_flowing_interface, set_flowing_speed, set_ppm, set_draw_crosshair, set_draw_cursor, set_draw_outlines};
+
 // Define modules
 pub mod api;
 pub mod model;
@@ -28,7 +32,7 @@ mod logging;
 
 // FFI and WebAssembly support
 #[cfg(feature = "wasm")]
-pub mod wasm_api;
+pub mod wasm_api_simple;
 
 // No longer needed with the wasm_bindings module
 #[cfg(feature = "wasm")]
@@ -51,12 +55,13 @@ pub struct OptionBox {
 }
 
 #[cfg(feature = "wasm")]
-mod wasm_bindings {
+pub mod wasm_bindings {
     use super::*;
-    use wasm_bindgen::prelude::wasm_bindgen;
+    use wasm_bindgen::prelude::*;
     use wasm_bindgen::JsValue;
     use web_sys::console;
     use serde_wasm_bindgen;
+    use view::NodeShape;
 
     #[wasm_bindgen]
     pub fn dasher_get_options() -> JsValue {
@@ -66,20 +71,20 @@ mod wasm_bindings {
             let context = model.output_text();
             let alphabet = model.alphabet();
             if let Some(alphabet) = alphabet {
-                console::log_1(&format!("[WASM] dasher_get_options: alphabet loaded, {} symbols", alphabet.size()).into());
+                console::log_1(&JsValue::from_str(&format!("[WASM] dasher_get_options: alphabet loaded, {} symbols", alphabet.size())));
             } else {
-                console::log_1(&"[WASM] dasher_get_options: alphabet is None".into());
+                console::log_1(&JsValue::from_str("[WASM] dasher_get_options: alphabet is None"));
             }
-            console::log_1(&format!("[WASM] dasher_get_options: language_model present? {} | context: '{}'", has_language_model, context).into());
+            console::log_1(&JsValue::from_str(&format!("[WASM] dasher_get_options: language_model present? {} | context: '{}'", has_language_model, context)));
             if let Some(prob_vec) = model.get_probabilities() {
-                console::log_1(&format!("[WASM] dasher_get_options: got {} probabilities", prob_vec.len()).into());
+                console::log_1(&JsValue::from_str(&format!("[WASM] dasher_get_options: got {} probabilities", prob_vec.len())));
                 let options: Vec<OptionBox> = prob_vec.iter().map(|(c, p)| OptionBox {
                     symbol: c.to_string(),
                     prob: *p as f32,
                 }).collect();
                 serde_wasm_bindgen::to_value(&options).unwrap()
             } else {
-                console::log_1(&"[WASM] dasher_get_options: language_model is None".into());
+                console::log_1(&JsValue::from_str("[WASM] dasher_get_options: language_model is None"));
                 JsValue::NULL
             }
         })
@@ -115,7 +120,7 @@ mod wasm_bindings {
 
     #[wasm_bindgen]
     pub fn dasher_train(text: &str) -> bool {
-        console::log_1(&format!("[WASM] dasher_train: training with text of length {}", text.len()).into());
+        console::log_1(&JsValue::from_str(&format!("[WASM] dasher_train: training with text of length {}", text.len())));
 
         MODEL.with(|model| {
             let mut model = model.borrow_mut();
@@ -123,7 +128,7 @@ mod wasm_bindings {
             for ch in text.chars() {
                 model.update_language_model(ch);
             }
-            console::log_1(&"[WASM] dasher_train: training complete".into());
+            console::log_1(&JsValue::from_str("[WASM] dasher_train: training complete"));
             true
         })
     }

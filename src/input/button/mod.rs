@@ -2,6 +2,8 @@ use crate::input::filter::DasherInputExt;
 
 mod dynamic_filter;
 mod multi_press;
+pub mod one_button_dynamic_filter;
+pub mod two_button_dynamic_filter;
 
 pub use dynamic_filter::{OneButtonDynamicFilter, DynamicFilterConfig};
 pub use multi_press::{MultiPressMode, MultiPressConfig};
@@ -106,6 +108,32 @@ impl ButtonHandler {
     pub fn mode(&self) -> ButtonMode {
         self.config.mode
     }
+
+    /// Update the button state based on screen coordinates
+    pub fn update_state(&mut self, x: i32, y: i32, model: &mut DasherModel) {
+        // Store the current coordinates
+        self.current_coords = Coordinates { x: x as f64, y: y as f64 };
+
+        // Handle different modes
+        match self.config.mode {
+            ButtonMode::Direct => {
+                // In direct mode, we don't need to do anything here
+                // The actual movement is handled in the process method
+            },
+            ButtonMode::Dynamic => {
+                if let Some(filter) = &mut self.dynamic_filter {
+                    // Update the dynamic filter with the new coordinates
+                    filter.update_coordinates(x, y, model);
+                }
+            },
+            ButtonMode::MultiPress => {
+                if let Some(handler) = &mut self.multi_press {
+                    // Update the multi-press handler with the new coordinates
+                    handler.update_coordinates(x, y, model);
+                }
+            },
+        }
+    }
 }
 
 impl InputFilter for ButtonHandler {
@@ -130,7 +158,7 @@ impl InputFilter for ButtonHandler {
             },
         }
     }
-    
+
     fn process(&mut self, input: &mut dyn DasherInput, time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {
         match self.config.mode {
             ButtonMode::Dynamic => {

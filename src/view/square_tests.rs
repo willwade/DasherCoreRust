@@ -203,6 +203,13 @@ mod tests {
             text_3d_depth: 1,
             base_font_size: 16,
             font_size_scaling: 0.3,
+            margin_width: 1000,
+            draw_crosshair: true,
+            draw_cursor: true,
+            draw_outlines: true,
+            flowing_interface: true,
+            flowing_speed: 2.0,
+            use_ppm: true,
         };
         let view = DasherViewSquare::with_config(screen, config);
 

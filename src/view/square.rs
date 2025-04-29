@@ -81,6 +81,27 @@ pub struct SquareViewConfig {
 
     /// Font size scaling factor
     pub font_size_scaling: f64,
+
+    /// Margin width in abstract screen coordinates
+    pub margin_width: i64,
+
+    /// Whether to draw the crosshair
+    pub draw_crosshair: bool,
+
+    /// Whether to draw the cursor
+    pub draw_cursor: bool,
+
+    /// Whether to draw node outlines
+    pub draw_outlines: bool,
+
+    /// Whether to use the flowing interface (right to left movement)
+    pub flowing_interface: bool,
+
+    /// Speed of the flowing interface
+    pub flowing_speed: f64,
+
+    /// Whether to use PPM (Prediction by Partial Match) for node sizing
+    pub use_ppm: bool,
 }
 
 impl Default for SquareViewConfig {
@@ -97,6 +118,13 @@ impl Default for SquareViewConfig {
             text_3d_depth: 2,
             base_font_size: 24,
             font_size_scaling: 0.5,
+            margin_width: SCALE_FACTOR / 10, // 10% of screen width
+            draw_crosshair: true,
+            draw_cursor: true,
+            draw_outlines: true,
+            flowing_interface: true, // Enable flowing interface by default
+            flowing_speed: 2.0, // Default speed
+            use_ppm: true, // Enable PPM by default
         }
     }
 }
@@ -245,6 +273,42 @@ impl DasherViewSquare {
     /// Set the 3D text depth
     pub fn set_text_3d_depth(&mut self, depth: i32) {
         self.config.text_3d_depth = depth;
+    }
+
+    /// Enable or disable the flowing interface
+    pub fn set_flowing_interface(&mut self, enable: bool) {
+        self.config.flowing_interface = enable;
+    }
+
+    /// Set the flowing interface speed
+    pub fn set_flowing_speed(&mut self, speed: f64) {
+        self.config.flowing_speed = speed;
+    }
+
+    /// Enable or disable PPM (Prediction by Partial Match)
+    pub fn set_ppm(&mut self, enable: bool) {
+        self.config.use_ppm = enable;
+    }
+
+    /// Enable or disable drawing the crosshair
+    pub fn set_draw_crosshair(&mut self, enable: bool) {
+        self.config.draw_crosshair = enable;
+    }
+
+    /// Enable or disable drawing the cursor
+    pub fn set_draw_cursor(&mut self, enable: bool) {
+        self.config.draw_cursor = enable;
+    }
+
+    /// Enable or disable drawing node outlines
+    pub fn set_draw_outlines(&mut self, enable: bool) {
+        self.config.draw_outlines = enable;
+    }
+
+    /// Set the margin width
+    pub fn set_margin_width(&mut self, width: i64) {
+        self.config.margin_width = width;
+        self._set_scale_factor(); // Recalculate scale factors
     }
 
     /// Process delayed text rendering
@@ -633,6 +697,23 @@ impl DasherViewSquare {
         // Draw circle at intersection
         self.screen.draw_circle(cx, cy, 5, color_palette::RED, color_palette::BLACK, 1);
     }
+
+    /// Draw the cursor at the specified position
+    fn draw_cursor(&mut self, x: i32, y: i32) {
+        // Draw a crosshair cursor
+        let cursor_size = 10;
+        let cursor_color = color_palette::BLUE;
+        let cursor_width = 2;
+
+        // Draw horizontal line
+        self.screen.draw_line(x - cursor_size, y, x + cursor_size, y, cursor_color, cursor_width);
+
+        // Draw vertical line
+        self.screen.draw_line(x, y - cursor_size, x, y + cursor_size, cursor_color, cursor_width);
+
+        // Draw small circle at intersection
+        self.screen.draw_circle(x, y, 3, cursor_color, color_palette::BLACK, 1);
+    }
 }
 
 impl DasherView for DasherViewSquare {
@@ -640,17 +721,47 @@ impl DasherView for DasherViewSquare {
         (self.screen.get_width(), self.screen.get_height())
     }
 
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+
     fn get_visible_region(&self) -> (i64, i64, i64, i64) {
         // Return the visible region in Dasher coordinates
         // (min_x, min_y, max_x, max_y)
-        match self.orientation {
-            Orientation::LeftToRight | Orientation::RightToLeft => {
-                (0, 0, DasherModel::MAX_Y, DasherModel::MAX_Y)
-            }
-            Orientation::TopToBottom | Orientation::BottomToTop => {
-                (0, 0, DasherModel::MAX_Y, DasherModel::MAX_Y)
-            }
+
+        // If we have a cached visible region, return it
+        if let Some(region) = self.visible_region {
+            return region;
         }
+
+        // Calculate the visible region based on the screen dimensions
+        let (width, height) = self.get_dimensions();
+
+        // Convert screen corners to Dasher coordinates
+        let (_min_x, min_y) = self.screen_to_dasher(0, 0);
+        let (max_x, max_y) = match self.orientation {
+            Orientation::LeftToRight => self.screen_to_dasher(width, height),
+            Orientation::RightToLeft => self.screen_to_dasher(0, height),
+            Orientation::TopToBottom => self.screen_to_dasher(width, height),
+            Orientation::BottomToTop => self.screen_to_dasher(width, 0),
+        };
+
+        // Ensure min_x is always 0 (origin)
+        let min_x = 0;
+
+        // Ensure coordinates are in the correct order
+        let min_y = min_y.min(max_y);
+        let max_y = min_y.max(max_y);
+        let max_x = max_x.max(min_x);
+
+        // We can't cache the result here because self is immutable
+        // The caching is done in the _set_scale_factor method
+
+        (min_x, min_y, max_x, max_y)
     }
 
     fn screen_to_dasher(&self, x: i32, y: i32) -> (i64, i64) {
@@ -767,11 +878,26 @@ impl DasherView for DasherViewSquare {
 
         // Draw the root node and its children
         if let Some(root) = model.get_root_node() {
+            // Always use the standard render_node method
+            // The flowing interface is handled internally
             self.render_node(root);
         }
 
-        // Draw the crosshair
-        self.crosshair();
+        // Draw the crosshair if enabled
+        if self.config.draw_crosshair {
+            self.crosshair();
+        }
+
+        // Draw the cursor if enabled and an input device is available
+        if self.config.draw_cursor {
+            if let Some(input) = self.get_input_device() {
+                // Clone the input device to avoid borrowing issues
+                let input_clone = input.box_clone();
+                if let Some((x, y)) = input_clone.get_screen_coordinates(self) {
+                    self.draw_cursor(x, y);
+                }
+            }
+        }
 
         // Process delayed text rendering
         let mut delayed_texts = std::mem::take(&mut self.delayed_texts);
@@ -792,10 +918,27 @@ impl DasherView for DasherViewSquare {
         // Calculate node boundaries in Dasher coordinates
         let lower = node_ref.lower_bound() as i64;
         let upper = node_ref.upper_bound() as i64;
-        let range = upper - lower;
+        let _range = upper - lower; // Used later in the method
 
-        // We don't need screen coordinates anymore since we're using Dasher coordinates directly
-        // in draw_node_shape
+        // Get the visible region
+        let (_min_x, min_y, _max_x, max_y) = self.get_visible_region();
+
+        // Skip nodes that are completely outside the visible region
+        if upper < min_y || lower > max_y {
+            return;
+        }
+
+        // Calculate the node depth (distance from origin)
+        let mut node_depth = DasherModel::MAX_Y / 4;
+
+        // If flowing interface is enabled, adjust the node depth
+        if self.config.flowing_interface {
+            // Get screen dimensions
+            let (width, _height) = self.get_dimensions();
+
+            // Adjust node depth based on flowing speed
+            node_depth = (width as i64) - (node_depth as f64 * self.config.flowing_speed) as i64;
+        }
 
         // Draw the node
         let bg_color = Color::from_tuple((
@@ -813,18 +956,42 @@ impl DasherView for DasherViewSquare {
         ));
 
         // Draw the node with the current shape
-        self.draw_node_shape(DasherModel::MAX_Y / 4, lower, upper, bg_color, color_palette::BLACK, 1);
+        self.draw_node_shape(
+            node_depth,
+            lower,
+            upper,
+            bg_color,
+            if self.config.draw_outlines { color_palette::BLACK } else { color_palette::TRANSPARENT },
+            1
+        );
 
         // Draw the node label
         if let Some(label) = node_ref.label() {
             // Create a delayed text object
-            let text = self.dasher_draw_text(DasherModel::MAX_Y / 8, (lower + upper) / 2, label, fg_color);
+            let text = self.dasher_draw_text(node_depth / 2, (lower + upper) / 2, label, fg_color);
 
             // Add it to the delayed texts
             self.add_delayed_text(text);
         }
 
-        // Render children
+        // Render children recursively
+        // We'll do this directly here instead of calling a separate method
+        let node_ref = node.borrow();
+        let range = upper - lower;
+
+        // Calculate the child depth (further from origin)
+        let mut child_depth = node_depth * 2;
+
+        // If flowing interface is enabled, adjust the child depth
+        if self.config.flowing_interface {
+            // Get screen dimensions
+            let (width, _height) = self.get_dimensions();
+
+            // Adjust child depth based on flowing speed
+            child_depth = (width as i64) - (child_depth as f64 * self.config.flowing_speed) as i64;
+        }
+
+        // Render each child
         for child in node_ref.children() {
             let child_ref = child.borrow();
 
@@ -832,8 +999,29 @@ impl DasherView for DasherViewSquare {
             let child_lower = lower + (range * child_ref.lower_bound() as i64) / DasherNode::NORMALIZATION as i64;
             let child_upper = lower + (range * child_ref.upper_bound() as i64) / DasherNode::NORMALIZATION as i64;
 
-            // We don't need screen coordinates anymore since we're using Dasher coordinates directly
-            // in draw_node_shape
+            // Skip nodes that are completely outside the visible region
+            if child_upper < min_y || child_lower > max_y {
+                continue;
+            }
+
+            // If using PPM, adjust the child height based on probability
+            let mut adjusted_lower = child_lower;
+            let mut adjusted_upper = child_upper;
+
+            if self.config.use_ppm {
+                // Calculate the probability
+                let probability = child_ref.cumulative_probability().unwrap_or(0.01) as f64;
+
+                // Adjust the height based on probability
+                let height_factor = probability.sqrt() * 2.0;
+                let child_height = child_upper - child_lower;
+                let new_height = (child_height as f64 * height_factor) as i64;
+
+                // Center the adjusted height
+                let center = (child_lower + child_upper) / 2;
+                adjusted_lower = center - new_height / 2;
+                adjusted_upper = center + new_height / 2;
+            }
 
             // Draw the child node
             let child_bg_color = Color::from_tuple((
@@ -851,18 +1039,114 @@ impl DasherView for DasherViewSquare {
             ));
 
             // Draw the child node with the current shape
-            self.draw_node_shape(DasherModel::MAX_Y / 4, child_lower, child_upper, child_bg_color, color_palette::BLACK, 1);
+            self.draw_node_shape(
+                child_depth,
+                adjusted_lower,
+                adjusted_upper,
+                child_bg_color,
+                if self.config.draw_outlines { color_palette::BLACK } else { color_palette::TRANSPARENT },
+                1
+            );
 
             // Draw the child node label
             if let Some(label) = child_ref.label() {
                 // Create a delayed text object
-                let text = self.dasher_draw_text(DasherModel::MAX_Y / 3, (child_lower + child_upper) / 2, label, child_fg_color);
+                let text = self.dasher_draw_text(child_depth / 2, (child_lower + child_upper) / 2, label, child_fg_color);
 
                 // Add it to the delayed texts
                 self.add_delayed_text(text);
             }
+
+            // Recursively render grandchildren if any
+            if !child_ref.children().is_empty() {
+                // Create a new Rc to avoid borrowing issues
+                let child_node = Rc::clone(&child);
+
+                // Render the child's children
+                let child_node_ref = child_node.borrow();
+                for grandchild in child_node_ref.children() {
+                    let grandchild_ref = grandchild.borrow();
+
+                    // Calculate grandchild boundaries
+                    let grandchild_range = child_upper - child_lower;
+                    let grandchild_lower = child_lower + (grandchild_range * grandchild_ref.lower_bound() as i64) / DasherNode::NORMALIZATION as i64;
+                    let grandchild_upper = child_lower + (grandchild_range * grandchild_ref.upper_bound() as i64) / DasherNode::NORMALIZATION as i64;
+
+                    // Skip nodes that are completely outside the visible region
+                    if grandchild_upper < min_y || grandchild_lower > max_y {
+                        continue;
+                    }
+
+                    // Calculate the grandchild depth
+                    let mut grandchild_depth = child_depth * 2;
+
+                    // If flowing interface is enabled, adjust the grandchild depth
+                    if self.config.flowing_interface {
+                        // Get screen dimensions
+                        let (width, _height) = self.get_dimensions();
+
+                        // Adjust grandchild depth based on flowing speed
+                        grandchild_depth = (width as i64) - (grandchild_depth as f64 * self.config.flowing_speed) as i64;
+                    }
+
+                    // If using PPM, adjust the grandchild height based on probability
+                    let mut adjusted_lower = grandchild_lower;
+                    let mut adjusted_upper = grandchild_upper;
+
+                    if self.config.use_ppm {
+                        // Calculate the probability
+                        let probability = grandchild_ref.cumulative_probability().unwrap_or(0.01) as f64;
+
+                        // Adjust the height based on probability
+                        let height_factor = probability.sqrt() * 2.0;
+                        let grandchild_height = grandchild_upper - grandchild_lower;
+                        let new_height = (grandchild_height as f64 * height_factor) as i64;
+
+                        // Center the adjusted height
+                        let center = (grandchild_lower + grandchild_upper) / 2;
+                        adjusted_lower = center - new_height / 2;
+                        adjusted_upper = center + new_height / 2;
+                    }
+
+                    // Draw the grandchild node
+                    let grandchild_bg_color = Color::from_tuple((
+                        grandchild_ref.background_color().0,
+                        grandchild_ref.background_color().1,
+                        grandchild_ref.background_color().2,
+                        200
+                    ));
+
+                    let grandchild_fg_color = Color::from_tuple((
+                        grandchild_ref.foreground_color().0,
+                        grandchild_ref.foreground_color().1,
+                        grandchild_ref.foreground_color().2,
+                        255
+                    ));
+
+                    // Draw the grandchild node with the current shape
+                    self.draw_node_shape(
+                        grandchild_depth,
+                        adjusted_lower,
+                        adjusted_upper,
+                        grandchild_bg_color,
+                        if self.config.draw_outlines { color_palette::BLACK } else { color_palette::TRANSPARENT },
+                        1
+                    );
+
+                    // Draw the grandchild node label
+                    if let Some(label) = grandchild_ref.label() {
+                        // Create a delayed text object
+                        let text = self.dasher_draw_text(grandchild_depth / 2, (grandchild_lower + grandchild_upper) / 2, label, grandchild_fg_color);
+
+                        // Add it to the delayed texts
+                        self.add_delayed_text(text);
+                    }
+                }
+            }
         }
     }
+
+
 
     fn get_input_device(&self) -> Option<&dyn DasherInput> {
         self.input_device.as_deref()

@@ -215,16 +215,19 @@ impl InputFilter for CircleStartHandler {
     }
 
     fn pause(&mut self) {
-        // self.paused = true; // field does not exist
+        // Reset state when paused, similar to C++ implementation
+        self.reset();
     }
 
     fn unpause(&mut self) {
-        // self.paused = false; // field does not exist
+        // Reset state when unpaused, similar to C++ implementation
+        self.reset();
     }
 
     fn is_paused(&self) -> bool {
-    false
-}
+        // We don't track pause state directly, but we can check if we're in the Outside state
+        matches!(self.state, CircleState::Outside)
+    }
 
     fn activate(&mut self) {
         // Reset state when activated
@@ -236,9 +239,37 @@ impl InputFilter for CircleStartHandler {
         self.reset();
     }
 
-    fn decorate_view(&mut self, _view: &mut dyn DasherView) -> bool {
-        // No view decoration needed
-        false
+    fn decorate_view(&mut self, view: &mut dyn DasherView) -> bool {
+        // Get the screen dimensions
+        let (width, height) = view.get_dimensions();
+
+        // Set the center coordinates if not already set
+        if self.center.x == 0.0 && self.center.y == 0.0 {
+            // Default to center of screen
+            self.set_center(width as f64 / 2.0, height as f64 / 2.0);
+        }
+
+        // Convert center to screen coordinates
+        let (center_x, center_y) = view.dasher_to_screen(self.center.x as i64, self.center.y as i64);
+
+        // Draw the circle with different colors based on state
+        let (fill_color, outline_color, line_width) = match self.state {
+            CircleState::Outside => ((0, 0, 0, 0), (255, 0, 0, 255), 1),
+            CircleState::Tracking { .. } => ((255, 255, 0, 128), (255, 0, 0, 255), 2),
+            CircleState::Active { .. } => ((0, 255, 0, 128), (0, 255, 0, 255), 3),
+        };
+
+        // Draw the circle
+        view.draw_circle(
+            center_x as i64,
+            center_y as i64,
+            self.config.radius as i64,
+            fill_color,
+            outline_color,
+            line_width
+        );
+
+        true
     }
 
     fn process(&mut self, input: &mut dyn DasherInput, _time: u64, model: &mut DasherModel, view: &mut dyn DasherView) {

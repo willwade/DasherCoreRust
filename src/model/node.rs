@@ -90,6 +90,9 @@ pub struct DasherNode {
 
     /// Background color for this node (RGB)
     background_color: (u8, u8, u8),
+
+    /// Speed multiplier for this node (affects how quickly the user can navigate through it)
+    speed_mul: f64,
 }
 
 impl DasherNode {
@@ -129,7 +132,18 @@ impl DasherNode {
             symbol: None,
             foreground_color: (0, 0, 0),
             background_color: (255, 255, 255),
+            speed_mul: 1.0,
         }
+    }
+
+    /// Get the speed multiplier for this node
+    pub fn speed_mul(&self) -> f64 {
+        self.speed_mul
+    }
+
+    /// Set the speed multiplier for this node
+    pub fn set_speed_mul(&mut self, speed_mul: f64) {
+        self.speed_mul = speed_mul;
     }
 
     /// Set the bounds of this node
@@ -187,6 +201,15 @@ impl DasherNode {
     /// Get the probability range of this node
     pub fn range(&self) -> u32 {
         self.upper_bound - self.lower_bound
+    }
+
+    /// Get the cumulative probability of this node
+    pub fn cumulative_probability(&self) -> Option<f64> {
+        // Calculate the probability as a fraction of the total range
+        let range = self.range() as f64;
+        let total = Self::NORMALIZATION as f64;
+
+        Some(range / total)
     }
 
     /// Get the parent node
@@ -319,6 +342,7 @@ pub fn do_action(&mut self) {
             symbol: self.symbol,
             foreground_color: self.foreground_color,
             background_color: self.background_color,
+            speed_mul: self.speed_mul,
         }
     }
 }

@@ -87,6 +87,15 @@ impl OneButtonDynamicFilter {
         }
     }
 
+    /// Update coordinates based on screen position
+    pub fn update_coordinates(&mut self, x: i32, y: i32, model: &mut DasherModel) {
+        // Store the screen coordinates
+        self.current_coords = Coordinates { x: x as f64, y: y as f64 };
+
+        // Apply coordinates to model
+        model.apply_input_coordinates((x as i64, y as i64));
+    }
+
     /// Handle button click
     fn handle_click(&mut self, now: Instant) -> bool {
         // Check minimum click interval
@@ -178,8 +187,8 @@ impl OneButtonDynamicFilter {
         true
     }
 
-    /// Update coordinates based on state
-    fn update_coordinates(&mut self, _now: Instant, dt: Duration) {
+    /// Update coordinates based on state (internal method)
+    fn _update_coordinates_internal(&mut self, _now: Instant, dt: Duration) {
         let dt_secs = dt.as_secs_f64();
 
         match &mut self.state {
@@ -226,7 +235,7 @@ impl InputFilter for OneButtonDynamicFilter {
 
         // Update coordinates
         let dt = Duration::from_millis(16); // ~60 FPS
-        self.update_coordinates(now, dt);
+        self._update_coordinates_internal(now, dt);
 
         // Apply coordinates to model
         model.apply_input_coordinates((self.current_coords.x as i64, self.current_coords.y as i64));
@@ -302,14 +311,14 @@ mod tests {
         // Test forward movement
         let now = Instant::now();
         filter.handle_click(now);
-        filter.update_coordinates(now, Duration::from_millis(100));
+        filter._update_coordinates_internal(now, Duration::from_millis(100));
         assert!(filter.current_coords.x > 0.0);
 
         // Test backward movement
         thread::sleep(Duration::from_millis(100));
         let now = Instant::now();
         filter.handle_click(now);
-        filter.update_coordinates(now, Duration::from_millis(100));
+        filter._update_coordinates_internal(now, Duration::from_millis(100));
         assert!(filter.current_coords.x < 0.0);
     }
 }

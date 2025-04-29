@@ -192,5 +192,11 @@ pub trait DasherView {
 
     /// Set the orientation
     fn set_orientation(&mut self, orientation: Orientation);
+
+    /// Get self as Any for downcasting
+    fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Get self as Any for downcasting (mutable)
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
