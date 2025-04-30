@@ -250,6 +250,12 @@ impl DasherInterface {
         }
     }
 
+    /// Set the view
+    pub fn set_view(&mut self, view: Box<dyn DasherView>) -> Result<()> {
+        self.view = Some(view);
+        Ok(())
+    }
+
     /// Get the current offset in the text buffer
     pub fn get_offset(&self) -> i32 {
         self.model.get_offset()

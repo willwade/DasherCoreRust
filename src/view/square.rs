@@ -7,6 +7,7 @@ use crate::DasherInput;
 use crate::Result;
 use crate::view::{DasherView, DasherScreen, Orientation, Color, Label};
 use crate::view::color_palette;
+use crate::ffi::context;
 
 /// Text string for delayed rendering
 struct TextString {
@@ -913,6 +914,20 @@ impl DasherView for DasherViewSquare {
 
     /// Render a node and its children
     fn render_node(&mut self, node: Rc<RefCell<DasherNode>>) {
+        // Create a drawing context for this node
+        let drawing_context = crate::ffi::context::DrawingContext::from_node(&node);
+
+        // Set the current drawing context
+        crate::ffi::context::set_current_drawing_context(drawing_context.clone());
+
+        // Get the global context
+        let global_context = crate::ffi::context::get_global_context();
+
+        // Log debug information
+        if global_context.get_debug_mode() {
+            global_context.add_debug(&format!("render_node: Starting to render node {}", drawing_context.node_id));
+        }
+
         let node_ref = node.borrow();
 
         // Calculate node boundaries in Dasher coordinates
@@ -925,27 +940,65 @@ impl DasherView for DasherViewSquare {
 
         // Skip nodes that are completely outside the visible region
         if upper < min_y || lower > max_y {
+            if global_context.get_debug_mode() {
+                global_context.add_debug(&format!("render_node: Node {} is outside visible region, skipping", drawing_context.node_id));
+            }
+
+            // Clear the current drawing context
+            crate::ffi::context::clear_current_drawing_context();
+
             return;
         }
 
-        // Calculate the node depth (distance from origin)
-        let mut node_depth = DasherModel::MAX_Y / 4;
-
-        // If flowing interface is enabled, adjust the node depth
-        if self.config.flowing_interface {
-            // Get screen dimensions
-            let (width, _height) = self.get_dimensions();
-
-            // Adjust node depth based on flowing speed
-            node_depth = (width as i64) - (node_depth as f64 * self.config.flowing_speed) as i64;
+        // Log node information
+        if global_context.get_debug_mode() {
+            global_context.add_debug(&format!(
+                "render_node: Node {} boundaries: lower={}, upper={}, visible_region=({}, {})",
+                drawing_context.node_id, lower, upper, min_y, max_y
+            ));
         }
 
-        // Draw the node
+        // Get screen dimensions
+        let (width, height) = self.get_dimensions();
+
+        // Calculate the base node depth (distance from origin)
+        let base_depth = DasherModel::MAX_Y / 4;
+
+        // Calculate the node depth based on the flowing interface settings
+        let node_depth = if self.config.flowing_interface {
+            // In flowing interface mode, nodes start from the right side of the screen
+            // and move left as they get closer to being selected
+
+            // Calculate a depth that places the node on the right side of the screen
+            // and adjusts based on the flowing speed
+            let flow_factor = self.config.flowing_speed;
+            let depth_factor = 1.0 - (node_ref.offset() as f64 * 0.1).min(0.9); // Adjust based on node depth in tree
+
+            // Calculate the flowing depth - higher values = further to the right
+            let flowing_depth = (width as f64 * depth_factor * flow_factor) as i64;
+
+            // Ensure the depth is within reasonable bounds
+            flowing_depth.max(base_depth).min(width as i64 * 2)
+        } else {
+            // In standard mode, use a fixed depth
+            base_depth
+        };
+
+        // Create colors with appropriate alpha for depth perception
+        let alpha = if self.config.flowing_interface {
+            // Make nodes more transparent when they're further away
+            let distance_factor = (node_depth as f64 / (width as f64 * 2.0)).min(1.0);
+            let alpha_value = (255.0 * (1.0 - distance_factor * 0.5)) as u8;
+            alpha_value
+        } else {
+            200 // Default alpha
+        };
+
         let bg_color = Color::from_tuple((
             node_ref.background_color().0,
             node_ref.background_color().1,
             node_ref.background_color().2,
-            200
+            alpha
         ));
 
         let fg_color = Color::from_tuple((
@@ -967,8 +1020,17 @@ impl DasherView for DasherViewSquare {
 
         // Draw the node label
         if let Some(label) = node_ref.label() {
+            // Calculate text position based on flowing interface
+            let text_x = if self.config.flowing_interface {
+                // Position text closer to the left edge of the node
+                node_depth / 4
+            } else {
+                // Standard position
+                node_depth / 2
+            };
+
             // Create a delayed text object
-            let text = self.dasher_draw_text(node_depth / 2, (lower + upper) / 2, label, fg_color);
+            let text = self.dasher_draw_text(text_x, (lower + upper) / 2, label, fg_color);
 
             // Add it to the delayed texts
             self.add_delayed_text(text);
@@ -979,17 +1041,24 @@ impl DasherView for DasherViewSquare {
         let node_ref = node.borrow();
         let range = upper - lower;
 
-        // Calculate the child depth (further from origin)
-        let mut child_depth = node_depth * 2;
+        // Calculate the child depth based on the flowing interface settings
+        let child_depth = if self.config.flowing_interface {
+            // In flowing interface mode, children are positioned to the right of their parent
+            // The deeper in the tree, the further to the right
+            let flow_factor = self.config.flowing_speed;
 
-        // If flowing interface is enabled, adjust the child depth
-        if self.config.flowing_interface {
-            // Get screen dimensions
-            let (width, _height) = self.get_dimensions();
+            // Make sure children are visible by using a larger offset
+            let depth_offset = (width as f64 * 0.5 * flow_factor) as i64; // Increased space between parent and child
 
-            // Adjust child depth based on flowing speed
-            child_depth = (width as i64) - (child_depth as f64 * self.config.flowing_speed) as i64;
-        }
+            // Position children to the right of their parent
+            node_depth + depth_offset
+        } else {
+            // In standard mode, children are twice as far from the origin as their parent
+            node_depth * 2
+        };
+
+        // Debug output to help diagnose rendering issues
+        println!("Rendering child nodes at depth: {}", child_depth);
 
         // Render each child
         for child in node_ref.children() {
@@ -1023,12 +1092,16 @@ impl DasherView for DasherViewSquare {
                 adjusted_upper = center + new_height / 2;
             }
 
-            // Draw the child node
+            // Create colors with appropriate alpha for depth perception
+            // Always use full opacity for better visibility during debugging
+            let child_alpha = 255; // Full opacity
+
+            // Make child nodes more visible with brighter colors
             let child_bg_color = Color::from_tuple((
                 child_ref.background_color().0,
                 child_ref.background_color().1,
                 child_ref.background_color().2,
-                200
+                child_alpha
             ));
 
             let child_fg_color = Color::from_tuple((
@@ -1037,6 +1110,11 @@ impl DasherView for DasherViewSquare {
                 child_ref.foreground_color().2,
                 255
             ));
+
+            // Debug output to help diagnose rendering issues
+            if let Some(label) = child_ref.label() {
+                println!("Rendering child node with label: {}", label);
+            }
 
             // Draw the child node with the current shape
             self.draw_node_shape(
@@ -1050,11 +1128,24 @@ impl DasherView for DasherViewSquare {
 
             // Draw the child node label
             if let Some(label) = child_ref.label() {
+                // Calculate text position based on flowing interface
+                let text_x = if self.config.flowing_interface {
+                    // Position text at a fixed position for better visibility during debugging
+                    child_depth + 20 // Fixed offset from the node
+                } else {
+                    // Standard position
+                    child_depth / 2
+                };
+
                 // Create a delayed text object
-                let text = self.dasher_draw_text(child_depth / 2, (child_lower + child_upper) / 2, label, child_fg_color);
+                let text = self.dasher_draw_text(text_x, (child_lower + child_upper) / 2, label, child_fg_color);
 
                 // Add it to the delayed texts
                 self.add_delayed_text(text);
+
+                // Debug output
+                println!("Added text '{}' at position ({}, {})",
+                    label, text_x, (child_lower + child_upper) / 2);
             }
 
             // Recursively render grandchildren if any
@@ -1077,17 +1168,19 @@ impl DasherView for DasherViewSquare {
                         continue;
                     }
 
-                    // Calculate the grandchild depth
-                    let mut grandchild_depth = child_depth * 2;
+                    // Calculate the grandchild depth based on the flowing interface settings
+                    let grandchild_depth = if self.config.flowing_interface {
+                        // In flowing interface mode, grandchildren are positioned to the right of their parent
+                        // The deeper in the tree, the further to the right
+                        let flow_factor = self.config.flowing_speed;
+                        let depth_offset = (width as f64 * 0.2 * flow_factor) as i64; // Space between parent and child
 
-                    // If flowing interface is enabled, adjust the grandchild depth
-                    if self.config.flowing_interface {
-                        // Get screen dimensions
-                        let (width, _height) = self.get_dimensions();
-
-                        // Adjust grandchild depth based on flowing speed
-                        grandchild_depth = (width as i64) - (grandchild_depth as f64 * self.config.flowing_speed) as i64;
-                    }
+                        // Position grandchildren to the right of their parent
+                        child_depth + depth_offset
+                    } else {
+                        // In standard mode, grandchildren are twice as far from the origin as their parent
+                        child_depth * 2
+                    };
 
                     // If using PPM, adjust the grandchild height based on probability
                     let mut adjusted_lower = grandchild_lower;
@@ -1108,12 +1201,21 @@ impl DasherView for DasherViewSquare {
                         adjusted_upper = center + new_height / 2;
                     }
 
-                    // Draw the grandchild node
+                    // Create colors with appropriate alpha for depth perception
+                    let grandchild_alpha = if self.config.flowing_interface {
+                        // Make nodes more transparent when they're further away
+                        let distance_factor = (grandchild_depth as f64 / (width as f64 * 2.0)).min(1.0);
+                        let alpha_value = (255.0 * (1.0 - distance_factor * 0.5)) as u8;
+                        alpha_value
+                    } else {
+                        200 // Default alpha
+                    };
+
                     let grandchild_bg_color = Color::from_tuple((
                         grandchild_ref.background_color().0,
                         grandchild_ref.background_color().1,
                         grandchild_ref.background_color().2,
-                        200
+                        grandchild_alpha
                     ));
 
                     let grandchild_fg_color = Color::from_tuple((
@@ -1135,8 +1237,17 @@ impl DasherView for DasherViewSquare {
 
                     // Draw the grandchild node label
                     if let Some(label) = grandchild_ref.label() {
+                        // Calculate text position based on flowing interface
+                        let text_x = if self.config.flowing_interface {
+                            // Position text closer to the left edge of the node
+                            grandchild_depth / 4
+                        } else {
+                            // Standard position
+                            grandchild_depth / 2
+                        };
+
                         // Create a delayed text object
-                        let text = self.dasher_draw_text(grandchild_depth / 2, (grandchild_lower + grandchild_upper) / 2, label, grandchild_fg_color);
+                        let text = self.dasher_draw_text(text_x, (grandchild_lower + grandchild_upper) / 2, label, grandchild_fg_color);
 
                         // Add it to the delayed texts
                         self.add_delayed_text(text);
@@ -1144,6 +1255,14 @@ impl DasherView for DasherViewSquare {
                 }
             }
         }
+
+        // Log completion of rendering this node
+        if global_context.get_debug_mode() {
+            global_context.add_debug(&format!("render_node: Finished rendering node {}", drawing_context.node_id));
+        }
+
+        // Clear the current drawing context
+        crate::ffi::context::clear_current_drawing_context();
     }
 
 

@@ -3,7 +3,7 @@
 //! This module provides a frame rate manager that tracks frame times and calculates
 //! the number of steps needed to maintain a consistent bit rate.
 
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Frame rate manager for dynamic filters
 #[derive(Debug)]
@@ -117,6 +117,7 @@ impl FrameRate {
 mod tests {
     use super::*;
     use std::thread;
+    use std::time::Duration;
 
     #[test]
     fn test_frame_rate_basic() {

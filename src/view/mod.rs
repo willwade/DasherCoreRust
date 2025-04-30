@@ -3,7 +3,7 @@
 //! This module contains the implementation of the Dasher view, which is
 //! responsible for rendering the Dasher interface.
 
-mod square;
+pub mod square;
 #[cfg(test)]
 mod square_tests;
 

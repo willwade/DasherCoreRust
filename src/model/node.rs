@@ -162,6 +162,11 @@ impl DasherNode {
         self.symbol
     }
 
+    /// Get the symbol for this node (for FFI compatibility)
+    pub fn get_symbol(&self) -> Option<u32> {
+        self.symbol.map(|c| c as u32)
+    }
+
     /// Set the colors for this node
     pub fn set_colors(&mut self, foreground: (u8, u8, u8), background: (u8, u8, u8)) {
         self.foreground_color = foreground;
@@ -245,6 +250,38 @@ impl DasherNode {
     /// Get the label
     pub fn label(&self) -> Option<&String> {
         self.label.as_ref()
+    }
+
+    /// Get the text of this node (for FFI compatibility)
+    pub fn get_text(&self) -> String {
+        self.label.clone().unwrap_or_default()
+    }
+
+    /// Get the depth of this node in the tree
+    pub fn get_depth(&self) -> i32 {
+        let mut depth = 0;
+        let mut current = self.parent.clone();
+
+        while let Some(parent_weak) = current {
+            if let Some(parent) = parent_weak.upgrade() {
+                depth += 1;
+                current = parent.borrow().parent.clone();
+            } else {
+                break;
+            }
+        }
+
+        depth
+    }
+
+    /// Get the probability of this node
+    pub fn get_probability(&self) -> f64 {
+        self.cumulative_probability().unwrap_or(0.0)
+    }
+
+    /// Check if this node is a leaf
+    pub fn is_leaf(&self) -> bool {
+        self.children.is_empty()
     }
 
     /// Reparent this node to a new parent

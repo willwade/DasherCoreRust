@@ -153,6 +153,8 @@ impl DasherModel {
     }
     /// Y origin constant for coordinate calculations
     pub const ORIGIN_Y: i64 = 0;
+    /// X origin constant for coordinate calculations
+    pub const ORIGIN_X: i64 = 0;
     /// Placeholder for word predictions
     pub fn get_word_predictions(&mut self) -> Vec<String> {
         if let Some(manager) = &mut self.word_prediction {
@@ -163,6 +165,8 @@ impl DasherModel {
     }
     /// Maximum Y coordinate for the model (placeholder value)
     pub const MAX_Y: i64 = 1 << 20;
+    /// Maximum X coordinate for the model (placeholder value)
+    pub const MAX_X: i64 = 1 << 20;
     /// Normalization constant for probability calculations
     pub const NORMALIZATION: u32 = 1 << 16;
     /// Create a new Dasher model with default settings
@@ -234,20 +238,45 @@ impl DasherModel {
 
     /// Initialize the model
     pub fn initialize(&mut self) -> Result<()> {
-        // Create an English alphabet
-        let alphabet = crate::alphabet::Alphabet::english();
+        // Create an English alphabet if none exists
+        if self.alphabet.is_none() {
+            let alphabet = crate::alphabet::Alphabet::english();
+            println!("Created default English alphabet with {} symbols", alphabet.size());
+            self.set_alphabet(alphabet);
+        } else {
+            println!("Using existing alphabet with {} symbols", self.alphabet.as_ref().unwrap().size());
+        }
 
-        // Set the alphabet
-        self.set_alphabet(alphabet);
+        // Create a default language model if none exists
+        if self.language_model.is_none() {
+            let language_model = Box::new(crate::model::language::CombinedLanguageModel::new(
+                crate::model::language::PPMOrder::Three
+            ));
+            println!("Created default combined language model");
+            self.set_language_model(language_model);
+        } else {
+            println!("Using existing language model");
+        }
 
         // Create a root node
         let root = Rc::new(RefCell::new(DasherNode::new(0, Some("Root".to_string()))));
+        println!("Created root node");
 
         // Set the root node
         self.root = Some(root.clone());
 
         // Expand the root node to create its children
         self.expand_node(&root);
+        println!("Expanded root node, child count: {}", root.borrow().children().len());
+
+        // Train the language model with some basic text if it's empty
+        if let Some(lm) = &mut self.language_model {
+            let training_text = "the quick brown fox jumps over the lazy dog";
+            println!("Training language model with basic text");
+            for c in training_text.chars() {
+                self.update_language_model(c);
+            }
+        }
 
         Ok(())
     }
@@ -375,9 +404,8 @@ impl DasherModel {
             // Get the probabilities for each symbol
             let probs = if let Some(lm) = &mut self.language_model {
                 // Use the language model to get probabilities
-                let context = lm.create_empty_context();
-
-                // lm.release_context(context);
+                // Use the current output text as context for better predictions
+                let context = self.output_text.clone();
                 lm.get_probs(&context)
             } else {
                 // Use uniform probabilities
@@ -391,9 +419,21 @@ impl DasherModel {
 
             // Create a child for each symbol in the alphabet
             let mut lower_bound = 0;
+            let mut created_count = 0;
+
+            // Ensure we have at least some probability for each symbol
+            let min_prob = 1;
 
             for symbol in alphabet.symbols().iter() {
-                let prob = probs.get(&symbol.character).copied().unwrap_or(0.0) as u32;
+                // Get probability from language model or use minimum
+                let mut prob = probs.get(&symbol.character).copied().unwrap_or(0.0) as u32;
+
+                // Ensure minimum probability
+                if prob < min_prob {
+                    prob = min_prob;
+                }
+
+                // Create node if probability is positive
                 if prob > 0 {
                     let upper_bound = lower_bound + prob;
 
@@ -410,7 +450,10 @@ impl DasherModel {
                     child.borrow_mut().set_symbol(symbol.character);
 
                     // Set the colors
-                    child.borrow_mut().set_colors((symbol.foreground_color.r, symbol.foreground_color.g, symbol.foreground_color.b), (symbol.background_color.r, symbol.background_color.g, symbol.background_color.b));
+                    child.borrow_mut().set_colors(
+                        (symbol.foreground_color.r, symbol.foreground_color.g, symbol.foreground_color.b),
+                        (symbol.background_color.r, symbol.background_color.g, symbol.background_color.b)
+                    );
 
                     // Set the parent
                     child.borrow_mut().set_parent(Rc::downgrade(node));
@@ -420,8 +463,11 @@ impl DasherModel {
 
                     // Update the lower bound for the next symbol
                     lower_bound = upper_bound;
+                    created_count += 1;
                 }
             }
+
+            println!("Created {} child nodes for alphabet symbols", created_count);
         }
 
         // Set the ALL_CHILDREN flag
